@@ -55,7 +55,12 @@ import {
   fromScrollParent,
   useObservable,
 } from "../../src/utilites";
-import { InternalItem, PageProvider, pipeline, ScrollAction } from "../../src/pipeline";
+import {
+  InternalItem,
+  PageProvider,
+  pipeline,
+  ScrollAction,
+} from "../../src/pipeline";
 import { once } from "ramda";
 import type { VueInstance } from "@vueuse/core";
 

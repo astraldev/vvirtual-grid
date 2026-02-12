@@ -30,18 +30,18 @@ npm install vue-virtual-scroll-grid
 
 ## Available Props
 
-| Name                       | Description                                                                       | Type                                                           | Validation                                                          |
-| -------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `length`                   | The number of items in the list                                                   | `number`                                                       | Required, an integer greater than or equal to 0                     |
-| `pageProvider`             | The callback that returns a page of items as a promise. `pageNumber` start with 0 | `(pageNumber: number, pageSize: number) => Promise<unknown[]>` | Required                                                            |
-| `pageSize`                 | The number of items in a page from the item provider (e.g. a backend API)         | `number`                                                       | Required, an integer greater than or equal to 1                     |
-| `pageProviderDebounceTime` | Debounce window in milliseconds on the calls to `pageProvider`                    | `number`                                                       | Optional, an integer greater than or equal to 0, defaults to `0`    |
-| `probeTag`                 | The HTML tag used as probe element. Default value is `div`                        | `string`                                                       | Optional, any valid HTML tag, defaults to `div`                     |
-| `respectScrollToOnResize`  | Snap to the position set by `scrollTo` when the grid container is resized         | `boolean`                                                      | Optional, defaults to `false`                                       |
-| `scrollBehavior`           | The behavior of `scrollTo`. Default value is `smooth`                             | `smooth` &#124; `auto`                                         | Optional, a string to be `smooth` or `auto`, defaults to `smooth`   |
-| `scrollTo`                 | Scroll to a specific item by index                                                | `number`                                                       | Optional, an integer from 0 to the `length` prop - 1, defaults to 0 |
-| `tag`                      | The HTML tag used as container element. Default value is `div`                    | `string`                                                       | Optional, any valid HTML tag, defaults to `div`                     |
-| `getKey`                   | The `:key` used on each grid item. Auto-generated, but overwritable via function  | `(internalItem: InternalItem) => number \| string` <sup>1</sup>| Optional, any valid Function that returns a `string` or `number`    |
+| Name                       | Description                                                                       | Type                                                            | Validation                                                          |
+| -------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `length`                   | The number of items in the list                                                   | `number`                                                        | Required, an integer greater than or equal to 0                     |
+| `pageProvider`             | The callback that returns a page of items as a promise. `pageNumber` start with 0 | `(pageNumber: number, pageSize: number) => Promise<unknown[]>`  | Required                                                            |
+| `pageSize`                 | The number of items in a page from the item provider (e.g. a backend API)         | `number`                                                        | Required, an integer greater than or equal to 1                     |
+| `pageProviderDebounceTime` | Debounce window in milliseconds on the calls to `pageProvider`                    | `number`                                                        | Optional, an integer greater than or equal to 0, defaults to `0`    |
+| `probeTag`                 | The HTML tag used as probe element. Default value is `div`                        | `string`                                                        | Optional, any valid HTML tag, defaults to `div`                     |
+| `respectScrollToOnResize`  | Snap to the position set by `scrollTo` when the grid container is resized         | `boolean`                                                       | Optional, defaults to `false`                                       |
+| `scrollBehavior`           | The behavior of `scrollTo`. Default value is `smooth`                             | `smooth` &#124; `auto`                                          | Optional, a string to be `smooth` or `auto`, defaults to `smooth`   |
+| `scrollTo`                 | Scroll to a specific item by index                                                | `number`                                                        | Optional, an integer from 0 to the `length` prop - 1, defaults to 0 |
+| `tag`                      | The HTML tag used as container element. Default value is `div`                    | `string`                                                        | Optional, any valid HTML tag, defaults to `div`                     |
+| `getKey`                   | The `:key` used on each grid item. Auto-generated, but overwritable via function  | `(internalItem: InternalItem) => number \| string` <sup>1</sup> | Optional, any valid Function that returns a `string` or `number`    |
 
 Example:
 
@@ -120,7 +120,7 @@ Example:
 
 ## Exposed Public Properties
 
-* `allItems`: All items memoized by the grid
+- `allItems`: All items memoized by the grid
 
 ## Scroll Mode
 

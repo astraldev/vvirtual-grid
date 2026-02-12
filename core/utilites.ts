@@ -11,7 +11,6 @@ import { onMounted, Ref, ref, watchEffect } from "vue";
 import { partial, pipe, unary } from "ramda";
 import {
   MaybeElementRef,
-  ResizeObserverEntry,
   tryOnUnmounted,
   unrefElement,
   useResizeObserver,
@@ -119,7 +118,6 @@ export function getScrollParents(
     let parent: Element | null = element;
     // parent.assignedSlot.parentElement find the correct parent if the grid is inside a native web component
     (parent = parent.assignedSlot?.parentElement ?? parent.parentElement);
-
   ) {
     const parentStyle = getComputedStyle(parent);
 

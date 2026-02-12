@@ -192,12 +192,13 @@ export function accumulateAllItems(
   allItems: unknown[],
   [{ pageNumber, items }, length, pageSize]: [ItemsByPage, number, number],
 ): unknown[] {
-  const allItemsFill = new Array(Math.max(length - allItems.length, 0)).fill(
-    undefined,
+  const allItemsFill = Array.from(
+    { length: Math.max(length - allItems.length, 0) },
+    () => undefined,
   );
-
-  const pageFill = new Array(Math.max(pageSize - items.length, 0)).fill(
-    undefined,
+  const pageFill = Array.from(
+    { length: Math.max(pageSize - items.length, 0) },
+    () => undefined,
   );
 
   const normalizedItems = concat(slice(0, pageSize, items), pageFill);
@@ -251,7 +252,7 @@ export function getVisibleItems(
 ): InternalItem[] {
   return pipe<unknown[][], unknown[], InternalItem[]>(
     slice(bufferedOffset, bufferedOffset + bufferedLength),
-    addIndex(ramdaMap)((value, localIndex) => {
+    addIndex(ramdaMap)((value: any, localIndex: number) => {
       const index = bufferedOffset + localIndex;
       const { x, y } = getItemOffsetByIndex(index, resizeMeasurement);
 
