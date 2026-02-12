@@ -1,5 +1,5 @@
 <template>
-  <component :is="tag" v-show="length > 0" ref="rootRef" :style="rootStyles">
+  <component :is="tag" v-show="length > 0" ref="root" :style="rootStyles">
     <component
       :is="probeTag"
       :style="{
@@ -10,7 +10,7 @@
         zIndex: -1,
         placeSelf: 'stretch',
       }"
-      ref="probeRef"
+      ref="probe"
     >
       <slot name="probe" />
     </component>
@@ -47,16 +47,17 @@ import {
   computed,
   watch,
   StyleValue,
+  useTemplateRef,
 } from "vue";
 import {
   fromProp,
   fromResizeObserver,
   fromScrollParent,
   useObservable,
-} from "./utilites";
-import { InternalItem, PageProvider, pipeline, ScrollAction } from "./pipeline";
+} from "../../src/utilites";
+import { InternalItem, PageProvider, pipeline, ScrollAction } from "../../src/pipeline";
 import { once } from "ramda";
-import { VueInstance } from "@vueuse/core";
+import type { VueInstance } from "@vueuse/core";
 
 export default defineComponent({
   name: "Grid",
@@ -124,8 +125,8 @@ export default defineComponent({
   },
   setup(props, { expose }) {
     // template refs
-    const rootRef = ref<HTMLElement | SVGElement | VueInstance>();
-    const probeRef = ref<HTMLElement | SVGElement | VueInstance>();
+    const rootRef = useTemplateRef<HTMLElement | VueInstance>("root");
+    const probeRef = useTemplateRef<HTMLElement | VueInstance>("probe");
 
     // data to render
     const {

@@ -9,7 +9,7 @@ import {
   getObservableOfVisiblePageNumbers,
   getResizeMeasurement,
   getVisibleItems,
-} from "./pipeline";
+} from "../pipeline";
 import { TestScheduler } from "rxjs/testing";
 
 describe("computeSpaceBehindWindowOf", () => {

@@ -1,6 +1,5 @@
 import {
   animationFrameScheduler,
-  filter,
   fromEventPattern,
   map,
   mergeAll,

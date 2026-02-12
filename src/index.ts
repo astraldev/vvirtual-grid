@@ -1,3 +1,3 @@
-import Grid from "./Grid.vue";
+import Grid from "../integrations/vue/Grid.vue";
 
 export default Grid;
