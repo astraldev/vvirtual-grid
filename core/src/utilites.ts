@@ -1,5 +1,6 @@
 import {
   animationFrameScheduler,
+  EMPTY,
   fromEventPattern,
   map,
   mergeAll,
@@ -23,6 +24,8 @@ export function fromResizeObserver<T extends keyof ResizeObserverEntry>(
   elRef: MaybeElementRef,
   pluckTarget: T,
 ): Observable<ResizeObserverEntry[T]> {
+  if (typeof window === "undefined") return EMPTY;
+
   return scheduled(
     fromEventPattern<ResizeObserverEntry[]>(
       pipe(unary, partial(useResizeObserver, [elRef])),

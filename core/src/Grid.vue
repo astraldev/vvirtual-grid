@@ -1,22 +1,39 @@
 <template>
   <component :is="tag" v-show="length > 0" ref="root" :style="rootStyles">
-    <component :is="probeTag" :style="{
-      opacity: 0,
-      visibility: 'hidden',
-      gridArea: '1/1',
-      pointerEvents: 'none',
-      zIndex: -1,
-      placeSelf: 'stretch',
-    }" ref="probe">
+    <component
+      :is="probeTag"
+      :style="{
+        opacity: 0,
+        visibility: 'hidden',
+        gridArea: '1/1',
+        pointerEvents: 'none',
+        zIndex: -1,
+        placeSelf: 'stretch',
+      }"
+      ref="probe"
+    >
       <slot name="probe" />
     </component>
 
-    <template v-for="internalItem in buffer" :key="
+    <template
+      v-for="internalItem in buffer"
+      :key="
         getKey ? getKey(internalItem) : keyPrefix + '.' + internalItem.index
-      ">
-      <slot v-if="internalItem.value === undefined" name="placeholder" :index="internalItem.index"
-        :style="internalItem.style" />
-      <slot v-else name="default" :item="internalItem.value" :index="internalItem.index" :style="internalItem.style" />
+      "
+    >
+      <slot
+        v-if="internalItem.value === undefined"
+        name="placeholder"
+        :index="internalItem.index"
+        :style="internalItem.style"
+      />
+      <slot
+        v-else
+        name="default"
+        :item="internalItem.value"
+        :index="internalItem.index"
+        :style="internalItem.style"
+      />
     </template>
   </component>
 </template>
@@ -152,7 +169,9 @@ onUpdated(
   }),
 );
 
-const buffer = useObservable<InternalItem<T>[]>(buffer$ as Observable<InternalItem<T>[]>);
+const buffer = useObservable<InternalItem<T>[]>(
+  buffer$ as Observable<InternalItem<T>[]>,
+);
 const contentSize = useObservable(contentSize$);
 const rootStyles = computed<StyleValue>(() =>
   Object.fromEntries([
@@ -171,7 +190,7 @@ watch(
   { immediate: true },
 );
 
-watch(buffer, (buf) => console.log(buf, buffer$), { immediate: true })
+watch(buffer, (buf) => console.log(buf, buffer$), { immediate: true });
 
 const allItems = useObservable(allItems$);
 defineExpose({ allItems });

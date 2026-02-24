@@ -43,27 +43,49 @@ const handleScrollTo = () => {
 
       <div class="controls">
         <section class="control-group">
-          <label class="control-label">Total Items: <span class="mono">{{ totalItems }}</span></label>
-          <Slider v-model="totalItems" :min="10" :max="10000" class="control-input" />
+          <label class="control-label"
+            >Total Items: <span class="mono">{{ totalItems }}</span></label
+          >
+          <Slider
+            v-model="totalItems"
+            :min="10"
+            :max="10000"
+            class="control-input"
+          />
         </section>
 
         <section class="control-group">
           <label class="control-label">Scroll Mode</label>
-          <SelectButton v-model="scrollMode" :options="modeOptions" optionLabel="label" optionValue="value"
-            class="control-input grid-select" />
+          <SelectButton
+            v-model="scrollMode"
+            :options="modeOptions"
+            optionLabel="label"
+            optionValue="value"
+            class="control-input grid-select"
+          />
         </section>
 
         <section class="control-group">
           <label class="control-label">Scroll Behavior</label>
-          <SelectButton v-model="scrollBehavior" :options="behaviorOptions" optionLabel="label" optionValue="value"
-            class="control-input grid-select" />
+          <SelectButton
+            v-model="scrollBehavior"
+            :options="behaviorOptions"
+            optionLabel="label"
+            optionValue="value"
+            class="control-input grid-select"
+          />
         </section>
 
         <section class="control-group">
           <label class="control-label">Jump to Index</label>
           <div class="flex-row">
-            <InputNumber v-model="scrollToIndex" :min="0" :max="totalItems - 1" placeholder="Index"
-              class="index-input" />
+            <InputNumber
+              v-model="scrollToIndex"
+              :min="0"
+              :max="totalItems - 1"
+              placeholder="Index"
+              class="index-input"
+            />
             <Button label="Go" @click="handleScrollTo" severity="primary" />
           </div>
         </section>
@@ -74,8 +96,15 @@ const handleScrollTo = () => {
       </footer>
     </aside>
     <main class="content-area" :class="scrollMode">
-      <VVirtualGrid :length="totalItems" :page-size="pageSize" :page-provider="pageProvider"
-        :scroll-to="currentScrollTo" :scroll-behavior="scrollBehavior" class="grid-instance" :class="scrollMode">
+      <VVirtualGrid
+        :length="totalItems"
+        :page-size="pageSize"
+        :page-provider="pageProvider"
+        :scroll-to="currentScrollTo"
+        :scroll-behavior="scrollBehavior"
+        class="grid-instance"
+        :class="scrollMode"
+      >
         <template #probe>
           <ProductItem />
         </template>

@@ -11,6 +11,7 @@ import {
   scan,
   shareReplay,
   switchMap,
+  take,
   withLatestFrom,
 } from "rxjs";
 import {
@@ -430,10 +431,15 @@ export function pipeline({
   // endregion
 
   // region: rendering buffer
-  const bufferMeta$: Observable<BufferMeta> = combineLatest(
-    [spaceBehindWindow$, resizeMeasurement$],
-    getBufferMeta(),
-  ).pipe(distinctUntilChanged<BufferMeta>(equals));
+  const bufferMeta$: Observable<BufferMeta> = combineLatest([
+    spaceBehindWindow$,
+    resizeMeasurement$,
+  ]).pipe(
+    map(([space, resize]) =>
+      getBufferMeta(window.innerWidth, window.innerHeight)(space, resize),
+    ),
+    distinctUntilChanged<BufferMeta>(equals),
+  );
 
   const visiblePageNumbers$: Observable<Observable<number>> = combineLatest([
     bufferMeta$,
@@ -487,10 +493,30 @@ export function pipeline({
     shareReplay(1),
   );
 
-  const buffer$: Observable<InternalItem[]> = combineLatest(
+  const ssrItems$: Observable<InternalItem[]> = combineLatest([
+    replayPageSize$,
+    memorizedPageProvider$,
+  ]).pipe(
+    take(1),
+    mergeMap(([pageSize, pageProvider]) =>
+      callPageProvider(0, pageSize, pageProvider),
+    ),
+    map(({ items }) =>
+      items.map(
+        (value, index) =>
+          ({ index, value, style: undefined }),
+      ),
+    ),
+  );
+
+  const domItems$: Observable<InternalItem[]> = combineLatest(
     [bufferMeta$, resizeMeasurement$, allItems$],
     getVisibleItems,
-  ).pipe(scan(accumulateBuffer, []));
+  );
+
+  const buffer$: Observable<InternalItem[]> = merge(ssrItems$, domItems$).pipe(
+    scan(accumulateBuffer, []),
+  );
   // endregion
 
   return { buffer$, contentSize$, scrollAction$, allItems$ };

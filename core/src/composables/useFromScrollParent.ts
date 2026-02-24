@@ -4,10 +4,12 @@ import {
   tryOnUnmounted,
 } from "@vueuse/core";
 import { watch } from "vue";
-import { Observable, Subject } from "rxjs";
+import { EMPTY, Observable, Subject } from "rxjs";
 import { getElementScrollParents } from "../utilites";
 
 export function fromScrollParent(elRef: MaybeElementRef): Observable<Element> {
+  if (typeof window === "undefined") return EMPTY;
+
   const scrollSubject = new Subject<Element>();
 
   watch(
