@@ -13,21 +13,18 @@ Render thousands of items with a fixed low number of DOM nodes. Just use CSS gri
 
 #links
 :::u-button
-
 ---
 
 color: neutral
 size: xl
 to: /getting-started/introduction
 trailing-icon: i-lucide-arrow-right
-
 ---
 
 Get started
 :::
 
 :::u-button
-
 ---
 
 color: neutral
@@ -35,7 +32,6 @@ icon: simple-icons-github
 size: xl
 to: https://github.com/astraldev/vvirtual-grid
 variant: outline
-
 ---
 
 View on GitHub
@@ -48,11 +44,8 @@ Features
 
 #features
 :::u-page-card
-
 ---
-
 icon: i-lucide-zap
-
 ---
 
 #title
@@ -63,11 +56,8 @@ Uses virtual scrolling / windowing to keep the number of DOM nodes low and const
 :::
 
 :::u-page-card
-
 ---
-
 icon: i-lucide-layout-grid
-
 ---
 
 #title
@@ -78,11 +68,8 @@ Minimum styling opinions. Use standard CSS grid properties to define your layout
 :::
 
 :::u-page-card
-
 ---
-
 icon: i-lucide-cloud-download
-
 ---
 
 #title
@@ -93,11 +80,8 @@ Built-in support for loading items in the background via a paginated API.
 :::
 
 :::u-page-card
-
 ---
-
 icon: i-lucide-refresh-cw
-
 ---
 
 #title
@@ -108,11 +92,8 @@ Render placeholders for unloaded items to provide a smooth scrolling experience.
 :::
 
 :::u-page-card
-
 ---
-
 icon: i-lucide-move
-
 ---
 
 #title
@@ -123,11 +104,8 @@ Supports both vertical and horizontal scrolling out of the box.
 :::
 
 :::u-page-card
-
 ---
-
 icon: i-lucide-server
-
 ---
 
 #title
