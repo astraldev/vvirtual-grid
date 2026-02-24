@@ -1,0 +1,69 @@
+{
+  "name": "vvirtual-grid",
+  "version": "1.1.0",
+  "keywords": [
+    "grid",
+    "virtual scroll",
+    "vue",
+    "windowing"
+  ],
+  "bugs": {
+    "url": "https://github.com/astraldev/vvirtual-grid/issues"
+  },
+  "license": "MIT",
+  "author": "Roc Wong <roc@kiwiberry.nz>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/astraldev/vvirtual-grid.git"
+  },
+  "type": "module",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs"
+    },
+    "./vue": {
+      "types": "./dist/vue/index.d.ts",
+      "import": "./dist/vue/index.mjs"
+    },
+    "./nuxt": {
+      "types": "./dist/nuxt/module.d.ts",
+      "import": "./dist/nuxt/module.mjs"
+    }
+  },
+  "scripts": {
+    "build": "unbuild",
+    "release": "changelogen --release && npm publish --access public && git push --follow-tags",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@vueuse/core": "^14.2.1",
+    "ramda": "^0.32.0",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@nuxt/kit": "^3.17.0",
+    "@nuxt/schema": "^4.3.1",
+    "@types/ramda": "^0.31.1",
+    "@vitejs/plugin-vue": "^6.0.4",
+    "happy-dom": "^17.1.0",
+    "lodash-es": "catalog:",
+    "mkdist": "^2.4.1",
+    "typescript": "catalog:",
+    "unbuild": "^3.6.1",
+    "vite": "^7.3.1",
+    "vitest": "catalog:",
+    "vue": "catalog:",
+    "vue-tsc": "catalog:"
+  },
+  "peerDependencies": {
+    "vue": "catalog:"
+  }
+}
