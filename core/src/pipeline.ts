@@ -336,6 +336,7 @@ interface PipelineOutput {
   contentSize$: Observable<ContentSize>;
   scrollAction$: Observable<ScrollAction>;
   allItems$: Observable<unknown[]>;
+  ready$: Observable<boolean>;
 }
 
 type AsyncPipelineOutput = Promise<PipelineOutput>;
@@ -516,7 +517,12 @@ export async function pipeline({
     scan(accumulateBuffer, []),
     startWith(ssrBuffer),
   );
-  // endregion
 
-  return { buffer$, contentSize$, scrollAction$, allItems$ };
+  const ready$: Observable<boolean> = domItems$.pipe(
+    map(() => true),
+    startWith(false),
+    distinctUntilChanged(),
+  );
+
+  return { buffer$, contentSize$, scrollAction$, allItems$, ready$ };
 }

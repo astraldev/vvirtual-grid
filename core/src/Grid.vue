@@ -1,17 +1,6 @@
 <template>
   <component :is="tag" v-show="length > 0" ref="root" :style="rootStyles">
-    <component
-      :is="probeTag"
-      :style="{
-        opacity: 0,
-        visibility: 'hidden',
-        gridArea: '1/1',
-        pointerEvents: 'none',
-        zIndex: -1,
-        placeSelf: 'stretch',
-      }"
-      ref="probe"
-    >
+    <component v-if="ready" :is="probeTag" :style="csrProbeStyles" ref="probe">
       <slot name="probe" />
     </component>
 
@@ -35,6 +24,9 @@
         :style="internalItem.style"
       />
     </template>
+    <component v-if="!ready" :is="probeTag" :style="ssrProbeStyles" ref="probe">
+      <slot name="probe" />
+    </component>
   </component>
 </template>
 
@@ -142,6 +134,7 @@ const rootRef = useTemplateRef<HTMLElement | VueInstance>("root");
 const probeRef = useTemplateRef<HTMLElement | VueInstance>("probe");
 
 const {
+  ready$, // has the buffer has started calculating with the DOM
   buffer$, // the items in the current scanning window
   contentSize$, // the size of the whole list
   scrollAction$, // the value sent to window.scrollTo()
@@ -162,6 +155,27 @@ const {
   scrollTo$: fromProp(props, "scrollTo"),
 });
 
+const sharedProbeStyles = computed(() => {
+  return {
+    opacity: 0,
+    visibility: "hidden",
+    pointerEvents: "none",
+    zIndex: -1,
+    placeSelf: "stretch",
+  };
+});
+
+const ssrProbeStyles = computed(() => {
+  return { ...sharedProbeStyles.value };
+});
+
+const csrProbeStyles = computed(() => {
+  return {
+    ...sharedProbeStyles.value,
+    gridArea: "1/1",
+  };
+});
+
 onUpdated(
   once(() => {
     scrollAction$.subscribe(({ target, top, left }: ScrollAction) => {
@@ -174,6 +188,7 @@ const buffer = useObservable<InternalItem<T>[]>(
   buffer$ as Observable<InternalItem<T>[]>,
 );
 
+const ready = useObservable(ready$);
 const contentSize = useObservable(contentSize$);
 const rootStyles = computed<StyleValue>(() =>
   Object.fromEntries([
@@ -193,5 +208,5 @@ watch(
 );
 
 const allItems = useObservable(allItems$);
-defineExpose({ allItems });
+defineExpose({ allItems, ready });
 </script>
