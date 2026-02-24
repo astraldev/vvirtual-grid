@@ -1,6 +1,22 @@
 # Changelog
 
 
+## v1.2.0
+
+[compare changes](https://github.com/astraldev/vvirtual-grid/compare/legacy...v1.2.0)
+
+### 🚀 Enhancements
+
+- SSR support + dedicated documentation page ([#1](https://github.com/astraldev/vvirtual-grid/pull/1))
+
+### 📖 Documentation
+
+- Update documentation and CI files ([8890d4d](https://github.com/astraldev/vvirtual-grid/commit/8890d4d))
+
+### ❤️ Contributors
+
+- Ekure Edem
+
 ## v1.1.0
 
 [compare changes](https://github.com/astraldev/vvirtual-grid/compare/legacy...v1.1.0)
