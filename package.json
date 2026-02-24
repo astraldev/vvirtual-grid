@@ -2,6 +2,7 @@
   "scripts": {
     "format": "oxfmt",
     "prepare": "husky",
+    "lint": "pnpm --filter=vvirtual-grid run lint",
     "test": "pnpm --filter=vvirtual-grid run test",
     "release": "pnpm --filter=vvirtual-grid run release"
   },

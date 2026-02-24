@@ -1,5 +1,5 @@
 import { tryOnUnmounted } from "@vueuse/core";
-import { take, type Observable } from "rxjs";
+import { type Observable } from "rxjs";
 import { type Ref, shallowRef } from "vue";
 
 export function useObservable<H>(observable: Observable<H>): Readonly<Ref<H>> {
