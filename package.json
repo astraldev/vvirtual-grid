@@ -1,58 +1,17 @@
 {
-  "name": "vvirtual-grid",
-  "type": "module",
-  "version": "",
-  "author": "Roc Wong <roc@kiwiberry.nz>",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/astraldev/vvirtual-grid.git"
-  },
-  "keywords": [
-    "vue",
-    "windowing",
-    "virtual scroll",
-    "grid"
-  ],
-  "bugs": {
-    "url": "https://github.com/astraldev/vvirtual-grid/issues"
-  },
-  "files": [
-    "dist"
-  ],
-  "license": "MIT",
-  "scripts": {
-    "build": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxt-module-build build",
-    "dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare",
-    "lint": "oxlint",
-    "lint:fix": "oxlint --fix",
-    "format": "oxfmt",
-    "format:check": "oxfmt --check"
-  },
-  "peerDependencies": {
-    "vue": "3.4.34"
-  },
-  "dependencies": {
-    "@vueuse/core": "^14.2.1",
-    "ramda": "^0.32.0",
-    "rxjs": "^7.8.2"
-  },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@nuxt/module-builder": "^1.0.2",
     "@types/ramda": "^0.31.1",
     "changelogen": "^0.6.2",
-    "eslint": "^10.0.0",
-    "lodash-es": "^4.17.23",
     "oxfmt": "^0.32.0",
     "oxlint": "^1.47.0",
-    "prettier": "^3.8.1",
+    "oxlint-tsgolint": "^0.14.2",
     "typescript": "^5.9.3",
-    "unbuild": "^3.6.1",
-    "vitest": "^4.0.18",
-    "vue": "^3.5.28",
-    "vue-tsc": "^3.2.4"
+    "unbuild": "^3.6.1"
   },
   "engines": {
     "node": ">=20"
   },
-  "packageManager": "pnpm@10.15.0+sha512.486ebc259d3e999a4e8691ce03b5cac4a71cbeca39372a9b762cb500cfdf0873e2cb16abe3d951b1ee2cf012503f027b98b6584e4df22524e0c7450d9ec7aa7b"
+  "packageManager": "pnpm@10.15.0"
 }

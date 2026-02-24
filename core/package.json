@@ -1,0 +1,43 @@
+{
+  "name": "vvirtual-grid",
+  "type": "module",
+  "version": "",
+  "license": "MIT",
+  "author": "Roc Wong <roc@kiwiberry.nz>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/astraldev/vvirtual-grid.git"
+  },
+  "keywords": [
+    "vue",
+    "windowing",
+    "virtual scroll",
+    "grid"
+  ],
+  "bugs": {
+    "url": "https://github.com/astraldev/vvirtual-grid/issues"
+  },
+  "scripts": {
+    "build": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxt-module-build build",
+    "dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
+  },
+  "peerDependencies": {
+    "vue": "3.4.34"
+  },
+  "dependencies": {
+    "@vueuse/core": "^14.2.1",
+    "ramda": "^0.32.0",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@types/ramda": "^0.31.1",
+    "lodash-es": "catalog:",
+    "vitest": "catalog:",
+    "vue": "catalog:",
+    "vue-tsc": "catalog:"
+  }
+}
