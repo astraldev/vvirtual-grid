@@ -1,4 +1,4 @@
-name: ci
+name: CI
 
 on:
   push:
@@ -10,40 +10,41 @@ on:
 
 jobs:
   lint:
+    name: Lint
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v6
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v6
         with:
           node-version: 20
-
-      - run: npm i -g --force corepack@latest && corepack enable
+          cache: "pnpm"
 
       - name: Install dependencies
-        run: npx nypm@latest i
+        run: pnpm install --ignore-scripts
 
       - name: Lint
-        run: npm run lint
+        run: pnpm --filter=vvirtual-grid run lint
 
   test:
+    name: Test
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v6
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v6
         with:
           node-version: 20
-
-      - run: npm i -g --force corepack@latest && corepack enable
+          cache: "pnpm"
 
       - name: Install dependencies
-        run: npx nypm@latest i
-
-      - name: Playground prepare
-        run: npm run dev:prepare
+        run: pnpm install --ignore-scripts
 
       - name: Test
-        run: npm run test
+        run: pnpm run test

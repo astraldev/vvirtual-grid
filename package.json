@@ -2,7 +2,8 @@
   "scripts": {
     "format": "oxfmt",
     "prepare": "husky",
-    "test": "pnpm --filter=vvirtual-grid run test"
+    "test": "pnpm --filter=vvirtual-grid run test",
+    "release": "pnpm --filter=vvirtual-grid run release"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.4.2",

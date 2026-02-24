@@ -254,7 +254,7 @@ export function getVisibleItems(
 ): InternalItem[] {
   return pipe<unknown[][], unknown[], InternalItem[]>(
     slice(bufferedOffset, bufferedOffset + bufferedLength),
-    addIndex(ramdaMap)((value: any, localIndex: number) => {
+    addIndex(ramdaMap)((value: unknown, localIndex: number) => {
       const index = bufferedOffset + localIndex;
       const { x, y } = getItemOffsetByIndex(index, resizeMeasurement);
 
