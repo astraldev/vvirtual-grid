@@ -12,6 +12,7 @@ import {
   shareReplay,
   switchMap,
   take,
+  tap,
   withLatestFrom,
 } from "rxjs";
 import {
@@ -313,6 +314,7 @@ export function getContentSize(
 }
 
 interface PipelineInput {
+  initialBufferSize$: Observable<number>;
   length$: Observable<number>;
   pageProvider$: Observable<PageProvider>;
   pageProviderDebounceTime$: Observable<number>;
@@ -338,6 +340,7 @@ interface PipelineOutput {
 }
 
 export function pipeline({
+  initialBufferSize$,
   length$,
   pageProvider$,
   pageProviderDebounceTime$,
@@ -431,7 +434,13 @@ export function pipeline({
   // endregion
 
   // region: rendering buffer
-  const bufferMeta$: Observable<BufferMeta> = combineLatest([
+  const initialBufferMeta$: Observable<BufferMeta> = initialBufferSize$.pipe(
+    filter((n) => n > 0),
+    map((n) => ({ bufferedOffset: 0, bufferedLength: n })),
+    take(1),
+  );
+
+  const dynamicBufferMeta$: Observable<BufferMeta> = combineLatest([
     spaceBehindWindow$,
     resizeMeasurement$,
   ]).pipe(
@@ -440,6 +449,11 @@ export function pipeline({
     ),
     distinctUntilChanged<BufferMeta>(equals),
   );
+
+  const bufferMeta$: Observable<BufferMeta> = merge(
+    initialBufferMeta$,
+    dynamicBufferMeta$,
+  ).pipe(distinctUntilChanged<BufferMeta>(equals), shareReplay(1));
 
   const visiblePageNumbers$: Observable<Observable<number>> = combineLatest([
     bufferMeta$,
@@ -493,19 +507,15 @@ export function pipeline({
     shareReplay(1),
   );
 
-  const ssrItems$: Observable<InternalItem[]> = combineLatest([
-    replayPageSize$,
-    memorizedPageProvider$,
-  ]).pipe(
+  const ssrItems$: Observable<InternalItem[]> = initialBufferSize$.pipe(
     take(1),
-    mergeMap(([pageSize, pageProvider]) =>
-      callPageProvider(0, pageSize, pageProvider),
-    ),
-    map(({ items }) =>
-      items.map(
-        (value, index) =>
-          ({ index, value, style: undefined }),
-      ),
+    filter((n) => n > 0),
+    map((n) =>
+      Array.from({ length: n as number }, (_, index) => ({
+        index,
+        value: undefined,
+        style: undefined,
+      } as InternalItem)),
     ),
   );
 
@@ -516,6 +526,7 @@ export function pipeline({
 
   const buffer$: Observable<InternalItem[]> = merge(ssrItems$, domItems$).pipe(
     scan(accumulateBuffer, []),
+    tap((buf) => console.log("[Pipeline] Buffer updated:", buf.length, "items")),
   );
   // endregion
 

@@ -15,9 +15,10 @@ export function fromProp<T, U extends keyof T>(
   props: T,
   propName: U,
 ): Observable<T[U]> {
-  return new Observable((subscriber) =>
-    watchEffect(() => subscriber.next(props[propName])),
-  );
+  return new Observable((subscriber) => {
+    subscriber.next(props[propName]);
+    return watchEffect(() => subscriber.next(props[propName]));
+  });
 }
 
 export function fromResizeObserver<T extends keyof ResizeObserverEntry>(
