@@ -9,8 +9,9 @@ import {
   getObservableOfVisiblePageNumbers,
   getResizeMeasurement,
   getVisibleItems,
-} from "../pipeline";
+} from "../src/pipeline";
 import { TestScheduler } from "rxjs/testing";
+import { describe, it, expect, vi } from "vitest";
 
 describe("computeSpaceBehindWindowOf", () => {
   // Mock getBoundingClientRect() for jsdom as it always returns:
@@ -26,7 +27,7 @@ describe("computeSpaceBehindWindowOf", () => {
       bottom: 0,
       x: 0,
       y: 0,
-      toJSON: jest.fn(),
+      toJSON: vi.fn(),
     });
 
     return div;
@@ -55,13 +56,13 @@ function createGridRoot(
   gridTemplateRows: string = "30px 30px 30px",
 ): HTMLElement {
   const el = document.createElement("div");
-  Object.assign(el.style, {
-    rowGap,
-    columnGap,
-    gridAutoFlow,
-    gridTemplateColumns,
-    gridTemplateRows,
-  });
+  el.style.setProperty("row-gap", rowGap);
+  el.style.setProperty("column-gap", columnGap);
+  el.style.setProperty("grid-auto-flow", gridAutoFlow);
+  el.style.setProperty("grid-template-columns", gridTemplateColumns);
+  el.style.setProperty("grid-template-rows", gridTemplateRows);
+
+  document.body.appendChild(el);
 
   return el;
 }
@@ -108,7 +109,7 @@ describe("getResizeMeasurement", () => {
       bottom: 0,
       x: 0,
       y: 0,
-      toJSON: jest.fn(),
+      toJSON: vi.fn(),
     });
 
     expect(measurement).toEqual({
@@ -224,7 +225,7 @@ describe("getObservableOfVisiblePageNumbers", () => {
 
 describe("callPageProvider", () => {
   it("calls pageProvider and returns pageNumber and items", async () => {
-    const pageProvider = jest.fn(async () => Array(10).fill("item"));
+    const pageProvider = vi.fn(async () => Array(10).fill("item"));
     const { pageNumber, items } = await callPageProvider(0, 10, pageProvider);
 
     expect(pageNumber).toBe(0);

@@ -104,54 +104,54 @@ export const getBufferMeta =
     windowInnerWidth: number = window.innerWidth,
     windowInnerHeight: number = window.innerHeight,
   ) =>
-    (
-      { width: widthBehindWindow, height: heightBehindWindow }: SpaceBehindWindow,
-      {
-        colGap,
-        rowGap,
-        flow,
-        columns,
-        rows,
-        itemHeightWithGap,
-        itemWidthWithGap,
-      }: ResizeMeasurement,
-    ): BufferMeta => {
-      let crosswiseLines;
-      let gap;
-      let itemSizeWithGap;
-      let windowInnerSize;
-      let spaceBehindWindow;
-      if (flow === "row") {
-        crosswiseLines = columns;
-        gap = rowGap;
-        itemSizeWithGap = itemHeightWithGap;
-        windowInnerSize = windowInnerHeight;
-        spaceBehindWindow = heightBehindWindow;
-      } else {
-        crosswiseLines = rows;
-        gap = colGap;
-        itemSizeWithGap = itemWidthWithGap;
-        windowInnerSize = windowInnerWidth;
-        spaceBehindWindow = widthBehindWindow;
-      }
+  (
+    { width: widthBehindWindow, height: heightBehindWindow }: SpaceBehindWindow,
+    {
+      colGap,
+      rowGap,
+      flow,
+      columns,
+      rows,
+      itemHeightWithGap,
+      itemWidthWithGap,
+    }: ResizeMeasurement,
+  ): BufferMeta => {
+    let crosswiseLines;
+    let gap;
+    let itemSizeWithGap;
+    let windowInnerSize;
+    let spaceBehindWindow;
+    if (flow === "row") {
+      crosswiseLines = columns;
+      gap = rowGap;
+      itemSizeWithGap = itemHeightWithGap;
+      windowInnerSize = windowInnerHeight;
+      spaceBehindWindow = heightBehindWindow;
+    } else {
+      crosswiseLines = rows;
+      gap = colGap;
+      itemSizeWithGap = itemWidthWithGap;
+      windowInnerSize = windowInnerWidth;
+      spaceBehindWindow = widthBehindWindow;
+    }
 
-      const linesInView =
-        itemSizeWithGap &&
-        Math.ceil((windowInnerSize + gap) / itemSizeWithGap) + 1;
-      const length = linesInView * crosswiseLines;
+    const linesInView =
+      itemSizeWithGap &&
+      Math.ceil((windowInnerSize + gap) / itemSizeWithGap) + 1;
+    const length = linesInView * crosswiseLines;
 
-      const linesBeforeView =
-        itemSizeWithGap &&
-        Math.floor((spaceBehindWindow + gap) / itemSizeWithGap);
-      const offset = linesBeforeView * crosswiseLines;
-      const bufferedOffset = Math.max(offset - Math.floor(length / 2), 0);
-      const bufferedLength = length * 2;
+    const linesBeforeView =
+      itemSizeWithGap &&
+      Math.floor((spaceBehindWindow + gap) / itemSizeWithGap);
+    const offset = linesBeforeView * crosswiseLines;
+    const bufferedOffset = Math.max(offset - Math.floor(length / 2), 0);
+    const bufferedLength = length * 2;
 
-      return {
-        bufferedOffset,
-        bufferedLength,
-      };
+    return {
+      bufferedOffset,
+      bufferedLength,
     };
+  };
 
 export function getObservableOfVisiblePageNumbers(
   { bufferedOffset, bufferedLength }: BufferMeta,
@@ -372,18 +372,18 @@ export function pipeline({
     switchMap((respectScrollToOnResize) =>
       respectScrollToOnResize
         ? // Emit when any input stream emits
-        combineLatest<[number, ResizeMeasurement, Element]>([
-          scrollToNotNil$,
-          resizeMeasurement$,
-          rootResize$,
-        ])
-        : // Emit only when the source stream emmits
-        scrollToNotNil$.pipe(
-          withLatestFrom<number, [ResizeMeasurement, Element]>(
+          combineLatest<[number, ResizeMeasurement, Element]>([
+            scrollToNotNil$,
             resizeMeasurement$,
             rootResize$,
+          ])
+        : // Emit only when the source stream emmits
+          scrollToNotNil$.pipe(
+            withLatestFrom<number, [ResizeMeasurement, Element]>(
+              resizeMeasurement$,
+              rootResize$,
+            ),
           ),
-        ),
     ),
     map<[number, ResizeMeasurement, Element], ScrollAction>(
       ([scrollTo, resizeMeasurement, rootEl]) => {
@@ -407,13 +407,13 @@ export function pipeline({
 
         const leftToGridContainer =
           rootEl instanceof HTMLElement &&
-            horizontalScrollEl instanceof HTMLElement
+          horizontalScrollEl instanceof HTMLElement
             ? rootEl.offsetLeft - horizontalScrollEl.offsetLeft
             : 0;
 
         const topToGridContainer =
           rootEl instanceof HTMLElement &&
-            verticalScrollEl instanceof HTMLElement
+          verticalScrollEl instanceof HTMLElement
             ? rootEl.offsetTop - verticalScrollEl.offsetTop
             : 0;
 

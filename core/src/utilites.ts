@@ -8,10 +8,7 @@ import {
 } from "rxjs";
 import { watchEffect } from "vue";
 import { partial, pipe, unary } from "ramda";
-import {
-  type MaybeElementRef,
-  useResizeObserver,
-} from "@vueuse/core";
+import { type MaybeElementRef, useResizeObserver } from "@vueuse/core";
 
 export function fromProp<T, U extends keyof T>(
   props: T,

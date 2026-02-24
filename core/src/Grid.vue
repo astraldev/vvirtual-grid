@@ -11,8 +11,9 @@
       <slot name="probe" />
     </component>
 
-    <template v-for="internalItem in buffer"
-      :key="getKey ? getKey(internalItem) : keyPrefix + '.' + internalItem.index">
+    <template v-for="internalItem in buffer" :key="
+        getKey ? getKey(internalItem) : keyPrefix + '.' + internalItem.index
+      ">
       <slot v-if="internalItem.value === undefined" name="placeholder" :index="internalItem.index"
         :style="internalItem.style" />
       <slot v-else name="default" :item="internalItem.value" :index="internalItem.index" :style="internalItem.style" />
@@ -21,14 +22,26 @@
 </template>
 
 <script lang="ts" setup>
-import type { VueInstance } from '@vueuse/core';
-import { once } from 'ramda';
-import { type PropType, useTemplateRef, onUpdated, computed, type StyleValue, ref, watch } from 'vue';
-import { type PageProvider, type InternalItem, pipeline, type ScrollAction } from '../../src/pipeline';
-import { fromProp, fromResizeObserver } from '../../src/utilites';
-import { fromScrollParent } from '../../src/composables/useFromScrollParent';
-import { useObservable } from '../../src/composables/useObservable';
-
+import type { VueInstance } from "@vueuse/core";
+import { once } from "ramda";
+import {
+  type PropType,
+  useTemplateRef,
+  onUpdated,
+  computed,
+  type StyleValue,
+  ref,
+  watch,
+} from "vue";
+import {
+  type PageProvider,
+  type InternalItem,
+  pipeline,
+  type ScrollAction,
+} from "./pipeline";
+import { fromProp, fromResizeObserver } from "./utilites";
+import { fromScrollParent } from "./composables/useFromScrollParent";
+import { useObservable } from "./composables/useObservable";
 
 const props = defineProps({
   /** Total number of items in the list  */
@@ -44,7 +57,7 @@ const props = defineProps({
     required: true,
   },
 
-  /** 
+  /**
    * Debounce window in milliseconds on the calls to `pageProvider`,
    * which is useful for avoiding network requests of skimmed pages.
    */
@@ -100,9 +113,7 @@ const props = defineProps({
 
   /** Method for key extraction from items */
   getKey: {
-    type: Function as PropType<
-      (internalItem: InternalItem) => number | string
-    >,
+    type: Function as PropType<(internalItem: InternalItem) => number | string>,
     required: false,
     default: undefined,
   },

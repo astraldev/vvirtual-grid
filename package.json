@@ -7,7 +7,7 @@
     "oxfmt": "^0.32.0",
     "oxlint": "^1.47.0",
     "oxlint-tsgolint": "^0.14.2",
-    "typescript": "^5.9.3",
+    "typescript": "catalog:",
     "unbuild": "^3.6.1"
   },
   "engines": {

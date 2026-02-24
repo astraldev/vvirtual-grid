@@ -1,8 +1,11 @@
-onlyBuiltDependencies:
-  - "@parcel/watcher"
-  - esbuild
-  - vue-demi
-
 packages:
   - core
-  - playgrounds
+  - playgrounds/*
+
+catalogs:
+  default:
+    vue: ^3.5.28
+    vitest: ^4.0.18
+    vue-tsc: ^3.2.4
+    lodash-es: ^4.17.23
+    typescript: ^5.9.3

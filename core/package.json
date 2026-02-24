@@ -1,21 +1,35 @@
 {
   "name": "vvirtual-grid",
-  "type": "module",
-  "version": "",
+  "version": "0.0.1",
+  "keywords": [
+    "grid",
+    "virtual scroll",
+    "vue",
+    "windowing"
+  ],
+  "bugs": {
+    "url": "https://github.com/astraldev/vvirtual-grid/issues"
+  },
   "license": "MIT",
   "author": "Roc Wong <roc@kiwiberry.nz>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/astraldev/vvirtual-grid.git"
   },
-  "keywords": [
-    "vue",
-    "windowing",
-    "virtual scroll",
-    "grid"
-  ],
-  "bugs": {
-    "url": "https://github.com/astraldev/vvirtual-grid/issues"
+  "type": "module",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "require": "./src/index.ts"
+    },
+    "./vue": {
+      "types": "./integrations/vue/index.ts",
+      "import": "./integrations/vue/index.ts"
+    }
   },
   "scripts": {
     "build": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxt-module-build build",
@@ -23,10 +37,9 @@
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "format": "oxfmt",
-    "format:check": "oxfmt --check"
-  },
-  "peerDependencies": {
-    "vue": "3.4.34"
+    "format:check": "oxfmt --check",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@vueuse/core": "^14.2.1",
@@ -35,9 +48,14 @@
   },
   "devDependencies": {
     "@types/ramda": "^0.31.1",
+    "happy-dom": "^17.1.0",
     "lodash-es": "catalog:",
+    "typescript": "catalog:",
     "vitest": "catalog:",
     "vue": "catalog:",
     "vue-tsc": "catalog:"
+  },
+  "peerDependencies": {
+    "vue": "catalog:"
   }
 }
