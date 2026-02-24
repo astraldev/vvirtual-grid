@@ -47,8 +47,9 @@ import {
   onUpdated,
   computed,
   type StyleValue,
-  ref,
   watch,
+  shallowRef,
+  useId,
 } from "vue";
 import {
   type PageProvider,
@@ -135,18 +136,6 @@ const props = defineProps({
     required: false,
     default: undefined,
   },
-
-  /**
-   * Number of items to render on the server (SSR) and before the first
-   * ResizeObserver measurement. Set to a value that covers a typical
-   * viewport to avoid content shift on hydration.
-   */
-  initialBufferSize: {
-    type: Number as PropType<number>,
-    required: false,
-    default: 0,
-    validator: (value: number) => Number.isInteger(value) && value >= 0,
-  },
 });
 
 const rootRef = useTemplateRef<HTMLElement | VueInstance>("root");
@@ -157,30 +146,20 @@ const {
   contentSize$, // the size of the whole list
   scrollAction$, // the value sent to window.scrollTo()
   allItems$, // all items memoized by the grid
-} = pipeline({
-  initialBufferSize$: fromProp(
-    props,
-    "initialBufferSize",
-  ) as Observable<number>,
+} = await pipeline({
   // streams of prop
-  length$: fromProp(props, "length") as Observable<number>,
-  pageProvider$: fromProp(props, "pageProvider") as Observable<PageProvider<T>>,
-  pageProviderDebounceTime$: fromProp(
-    props,
-    "pageProviderDebounceTime",
-  ) as Observable<number>,
-  pageSize$: fromProp(props, "pageSize") as Observable<number>,
+  length$: fromProp(props, "length"),
+  pageProvider$: fromProp(props, "pageProvider"),
+  pageProviderDebounceTime$: fromProp(props, "pageProviderDebounceTime"),
+  pageSize$: fromProp(props, "pageSize"),
   // a stream of item size measurements when it is changed
   itemRect$: fromResizeObserver(probeRef, "contentRect"),
   // a stream of root elements when it is resized
   rootResize$: fromResizeObserver(rootRef, "target"),
   // a stream of root elements when scrolling
   scroll$: fromScrollParent(rootRef),
-  respectScrollToOnResize$: fromProp(
-    props,
-    "respectScrollToOnResize",
-  ) as Observable<boolean>,
-  scrollTo$: fromProp(props, "scrollTo") as Observable<number | undefined>,
+  respectScrollToOnResize$: fromProp(props, "respectScrollToOnResize"),
+  scrollTo$: fromProp(props, "scrollTo"),
 });
 
 onUpdated(
@@ -194,6 +173,7 @@ onUpdated(
 const buffer = useObservable<InternalItem<T>[]>(
   buffer$ as Observable<InternalItem<T>[]>,
 );
+
 const contentSize = useObservable(contentSize$);
 const rootStyles = computed<StyleValue>(() =>
   Object.fromEntries([
@@ -205,14 +185,12 @@ const rootStyles = computed<StyleValue>(() =>
   ]),
 );
 
-const keyPrefix = ref<string>("");
+const keyPrefix = shallowRef(useId());
 watch(
   () => props.pageProvider,
-  () => (keyPrefix.value = String(new Date().getTime())),
+  () => (keyPrefix.value = useId()),
   { immediate: true },
 );
-
-watch(buffer, (buf) => console.log(buf, buffer$), { immediate: true });
 
 const allItems = useObservable(allItems$);
 defineExpose({ allItems });

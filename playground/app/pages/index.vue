@@ -102,7 +102,6 @@ const handleScrollTo = () => {
         :page-provider="pageProvider"
         :scroll-to="currentScrollTo"
         :scroll-behavior="scrollBehavior"
-        :initial-buffer-size="40"
         class="grid-instance"
         :class="scrollMode"
       >

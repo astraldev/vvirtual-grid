@@ -1,3 +1,5 @@
+import { useState } from "#imports";
+
 export interface Product {
   id: string;
   name: string;
@@ -18,7 +20,7 @@ export function generateMockItems(count: number): Product[] {
 }
 
 export const createPageProvider = (totalLength: number) => {
-  const allItems = generateMockItems(totalLength);
+  const allItems = useState("all-contents", () => generateMockItems(totalLength));
 
   return async (pageNumber: number, pageSize: number): Promise<Product[]> => {
     // Simulate network latency
@@ -29,6 +31,6 @@ export const createPageProvider = (totalLength: number) => {
 
     if (start >= totalLength) return [];
 
-    return allItems.slice(start, end);
+    return allItems.value.slice(start, end);
   };
 };

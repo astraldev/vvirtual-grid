@@ -3,6 +3,7 @@ import {
   debounceTime,
   distinctUntilChanged,
   filter,
+  firstValueFrom,
   map,
   merge,
   mergeMap,
@@ -10,9 +11,8 @@ import {
   range,
   scan,
   shareReplay,
+  startWith,
   switchMap,
-  take,
-  tap,
   withLatestFrom,
 } from "rxjs";
 import {
@@ -314,7 +314,6 @@ export function getContentSize(
 }
 
 interface PipelineInput {
-  initialBufferSize$: Observable<number>;
   length$: Observable<number>;
   pageProvider$: Observable<PageProvider>;
   pageProviderDebounceTime$: Observable<number>;
@@ -339,8 +338,9 @@ interface PipelineOutput {
   allItems$: Observable<unknown[]>;
 }
 
-export function pipeline({
-  initialBufferSize$,
+type AsyncPipelineOutput = Promise<PipelineOutput>;
+
+export async function pipeline({
   length$,
   pageProvider$,
   pageProviderDebounceTime$,
@@ -350,7 +350,13 @@ export function pipeline({
   scroll$,
   respectScrollToOnResize$,
   scrollTo$,
-}: PipelineInput): PipelineOutput {
+}: PipelineInput): AsyncPipelineOutput {
+  // Fetch the first page for SSR before setting up the reactive pipeline
+  const [ssrPageProvider, ssrPageSize] = await Promise.all([
+    firstValueFrom(pageProvider$),
+    firstValueFrom(pageSize$),
+  ]);
+  const { items: ssrPageItems } = await callPageProvider(0, ssrPageSize, ssrPageProvider);
   // region: measurements of the visual grid
   const spaceBehindWindow$: Observable<SpaceBehindWindow> = merge(
     rootResize$,
@@ -434,13 +440,7 @@ export function pipeline({
   // endregion
 
   // region: rendering buffer
-  const initialBufferMeta$: Observable<BufferMeta> = initialBufferSize$.pipe(
-    filter((n) => n > 0),
-    map((n) => ({ bufferedOffset: 0, bufferedLength: n })),
-    take(1),
-  );
-
-  const dynamicBufferMeta$: Observable<BufferMeta> = combineLatest([
+  const bufferMeta$: Observable<BufferMeta> = combineLatest([
     spaceBehindWindow$,
     resizeMeasurement$,
   ]).pipe(
@@ -448,12 +448,8 @@ export function pipeline({
       getBufferMeta(window.innerWidth, window.innerHeight)(space, resize),
     ),
     distinctUntilChanged<BufferMeta>(equals),
+    shareReplay(1),
   );
-
-  const bufferMeta$: Observable<BufferMeta> = merge(
-    initialBufferMeta$,
-    dynamicBufferMeta$,
-  ).pipe(distinctUntilChanged<BufferMeta>(equals), shareReplay(1));
 
   const visiblePageNumbers$: Observable<Observable<number>> = combineLatest([
     bufferMeta$,
@@ -507,16 +503,8 @@ export function pipeline({
     shareReplay(1),
   );
 
-  const ssrItems$: Observable<InternalItem[]> = initialBufferSize$.pipe(
-    take(1),
-    filter((n) => n > 0),
-    map((n) =>
-      Array.from({ length: n as number }, (_, index) => ({
-        index,
-        value: undefined,
-        style: undefined,
-      } as InternalItem)),
-    ),
+  const ssrBuffer: InternalItem[] = ssrPageItems.map(
+    (value, index) => ({ index, value, style: undefined }),
   );
 
   const domItems$: Observable<InternalItem[]> = combineLatest(
@@ -524,9 +512,9 @@ export function pipeline({
     getVisibleItems,
   );
 
-  const buffer$: Observable<InternalItem[]> = merge(ssrItems$, domItems$).pipe(
+  const buffer$: Observable<InternalItem[]> = domItems$.pipe(
     scan(accumulateBuffer, []),
-    tap((buf) => console.log("[Pipeline] Buffer updated:", buf.length, "items")),
+    startWith(ssrBuffer),
   );
   // endregion
 
