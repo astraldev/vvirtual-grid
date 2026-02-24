@@ -1,6 +1,6 @@
 {
   "name": "vvirtual-grid",
-  "version": "1.0.0-alpha.0",
+  "version": "1.0.0",
   "keywords": [
     "grid",
     "virtual scroll",
@@ -17,27 +17,25 @@
     "url": "git+https://github.com/astraldev/vvirtual-grid.git"
   },
   "type": "module",
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
-  "types": "./src/index.ts",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "require": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs"
     },
     "./vue": {
-      "types": "./integrations/vue/index.ts",
-      "import": "./integrations/vue/index.ts"
+      "types": "./dist/vue/index.d.ts",
+      "import": "./dist/vue/index.mjs"
     },
     "./nuxt": {
-      "types": "./integrations/nuxt/module.ts",
-      "import": "./integrations/nuxt/module.ts"
+      "types": "./dist/nuxt/module.d.ts",
+      "import": "./dist/nuxt/module.mjs"
     }
   },
   "scripts": {
-    "build": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxt-module-build build",
-    "dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare",
+    "build": "unbuild",
+    "release": "changelogen --release && npm publish --access public && git push --follow-tags",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "format": "oxfmt",
@@ -52,10 +50,14 @@
   },
   "devDependencies": {
     "@nuxt/kit": "^3.17.0",
+    "@nuxt/schema": "^4.3.1",
     "@types/ramda": "^0.31.1",
+    "@vitejs/plugin-vue": "^6.0.4",
     "happy-dom": "^17.1.0",
     "lodash-es": "catalog:",
+    "mkdist": "^2.4.1",
     "typescript": "catalog:",
+    "vite": "^7.3.1",
     "vitest": "catalog:",
     "vue": "catalog:",
     "vue-tsc": "catalog:"

@@ -203,8 +203,7 @@ const rootStyles = computed<StyleValue>(() =>
 const keyPrefix = shallowRef(useId());
 watch(
   () => props.pageProvider,
-  () => (keyPrefix.value = useId()),
-  { immediate: true },
+  () => (keyPrefix.value = new Date().getTime().toString()),
 );
 
 const allItems = useObservable(allItems$);

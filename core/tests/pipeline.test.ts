@@ -13,7 +13,7 @@ describe("pipeline integration", () => {
     bottom: 100,
     x: 0,
     y: 0,
-    toJSON: () => ({})
+    toJSON: () => ({}),
   };
 
   const mockRoot = document.createElement("div");
@@ -26,7 +26,7 @@ describe("pipeline integration", () => {
     const pageProvider: PageProvider = async (pageNumber, size) => {
       return Array.from({ length: size }, (_, i) => ({
         id: `item-${pageNumber}-${i}`,
-        index: pageNumber * size + i
+        index: pageNumber * size + i,
       }));
     };
 

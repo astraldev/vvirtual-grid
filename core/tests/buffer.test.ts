@@ -351,11 +351,23 @@ describe("accumulateBuffer", () => {
 
   it("deletes items from buffer when they are no longer visible", () => {
     const buffer = [
-      { index: 0, value: "a", style: { gridArea: "1/1", transform: "translate(0, 0)" } },
-      { index: 1, value: "b", style: { gridArea: "1/1", transform: "translate(0, 50)" } },
+      {
+        index: 0,
+        value: "a",
+        style: { gridArea: "1/1", transform: "translate(0, 0)" },
+      },
+      {
+        index: 1,
+        value: "b",
+        style: { gridArea: "1/1", transform: "translate(0, 50)" },
+      },
     ];
     const visibleItems = [
-      { index: 1, value: "b", style: { gridArea: "1/1", transform: "translate(0, 50)" } },
+      {
+        index: 1,
+        value: "b",
+        style: { gridArea: "1/1", transform: "translate(0, 50)" },
+      },
     ];
     const newBuffer = accumulateBuffer(buffer, visibleItems);
     expect(newBuffer).toEqual(visibleItems);
@@ -363,15 +375,25 @@ describe("accumulateBuffer", () => {
 
   it("appends new items to buffer when no free items are available for replacement", () => {
     const buffer = [
-      { index: 0, value: "a", style: { gridArea: "1/1", transform: "translate(0, 0)" } },
+      {
+        index: 0,
+        value: "a",
+        style: { gridArea: "1/1", transform: "translate(0, 0)" },
+      },
     ];
     const visibleItems = [
-      { index: 0, value: "a", style: { gridArea: "1/1", transform: "translate(0, 0)" } },
-      { index: 1, value: "b", style: { gridArea: "1/1", transform: "translate(0, 50)" } },
+      {
+        index: 0,
+        value: "a",
+        style: { gridArea: "1/1", transform: "translate(0, 0)" },
+      },
+      {
+        index: 1,
+        value: "b",
+        style: { gridArea: "1/1", transform: "translate(0, 50)" },
+      },
     ];
     const newBuffer = accumulateBuffer(buffer, visibleItems);
     expect(newBuffer).toEqual(visibleItems);
   });
 });
-
-
