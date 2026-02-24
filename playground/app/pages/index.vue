@@ -1,15 +1,35 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { VVirtualGrid } from "vvirtual-grid/vue";
+import { ref, computed, watch } from "vue";
+import { useRoute, useRouter } from "nuxt/app";
 import { createPageProvider } from "../utils/mockData";
 import ProductItem from "../components/ProductItem.vue";
 
-const totalItems = ref(2000);
-const pageSize = ref(20);
-const scrollMode = ref("vertical");
-const scrollBehavior = ref<"smooth" | "auto">("smooth");
+const route = useRoute();
+const router = useRouter();
+
+const totalItems = ref(Number(route.query.total) || 2000);
+const pageSize = ref(Number(route.query.size) || 20);
+const scrollMode = ref((route.query.mode as string) || "vertical");
+const scrollBehavior = ref<"smooth" | "auto">(
+  (route.query.behavior as "smooth" | "auto") || "smooth",
+);
 const scrollToIndex = ref<number | null>(null);
 const currentScrollTo = ref<number | undefined>(undefined);
+
+watch(
+  [totalItems, pageSize, scrollMode, scrollBehavior],
+  ([total, size, mode, behavior]) => {
+    router.replace({
+      query: {
+        ...route.query,
+        total: total.toString(),
+        size: size.toString(),
+        mode,
+        behavior,
+      },
+    });
+  },
+);
 
 const modeOptions = [
   { label: "Vertical", value: "vertical" },
@@ -96,7 +116,7 @@ const handleScrollTo = () => {
       </footer>
     </aside>
     <main class="content-area" :class="scrollMode">
-      <VVirtualGrid
+      <VirtualGrid
         :length="totalItems"
         :page-size="pageSize"
         :page-provider="pageProvider"
@@ -114,7 +134,7 @@ const handleScrollTo = () => {
         <template #placeholder="{ style }">
           <ProductItem :style="style" />
         </template>
-      </VVirtualGrid>
+      </VirtualGrid>
     </main>
   </div>
 </template>

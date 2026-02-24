@@ -1,6 +1,6 @@
-import { defineNuxtModule, addComponent, createResolver } from "@nuxt/kit";
+import { defineNuxtModule, addComponent, createResolver, addVitePlugin } from "@nuxt/kit";
 
-export interface ModuleOptions {}
+export interface ModuleOptions { }
 
 export default defineNuxtModule<ModuleOptions>({
   meta: {
@@ -18,5 +18,16 @@ export default defineNuxtModule<ModuleOptions>({
       name: "VirtualGrid",
       filePath: resolver.resolve("../../src/Grid.vue"),
     });
+
+    addVitePlugin(() => ({
+      name: '__optimize-deps',
+      config(config) {
+        config.optimizeDeps ||= {}
+        config.optimizeDeps.include ||= []
+        config.optimizeDeps.include.push(
+          "ramda", "@vueuse/core", "rxjs",
+        )
+      },
+    }))
   },
 });

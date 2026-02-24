@@ -11,7 +11,7 @@ export default defineNuxtConfig({
   },
   ssr: true,
 
-  modules: ["@primevue/nuxt-module"],
+  modules: ["@primevue/nuxt-module", "vvirtual-grid/nuxt"],
 
   primevue: {
     options: {

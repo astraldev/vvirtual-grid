@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { pipeline } from "../src/pipeline";
 import { of, firstValueFrom } from "rxjs";
 import type { PageProvider } from "../src/pipeline";
@@ -14,7 +14,7 @@ describe("pipeline integration", () => {
     x: 0,
     y: 0,
     toJSON: () => ({})
-  } as DOMRectReadOnly;
+  };
 
   const mockRoot = document.createElement("div");
 
