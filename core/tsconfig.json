@@ -3,6 +3,6 @@
     "strict": true,
     "target": "esnext",
     "moduleResolution": "bundler",
-    "verbatimModuleSyntax": true,
+    "verbatimModuleSyntax": true
   }
 }

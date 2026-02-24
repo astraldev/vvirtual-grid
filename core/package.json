@@ -29,6 +29,10 @@
     "./vue": {
       "types": "./integrations/vue/index.ts",
       "import": "./integrations/vue/index.ts"
+    },
+    "./nuxt": {
+      "types": "./integrations/nuxt/module.ts",
+      "import": "./integrations/nuxt/module.ts"
     }
   },
   "scripts": {
@@ -47,6 +51,7 @@
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@nuxt/kit": "^3.17.0",
     "@types/ramda": "^0.31.1",
     "happy-dom": "^17.1.0",
     "lodash-es": "catalog:",

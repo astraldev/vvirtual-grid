@@ -1,0 +1,57 @@
+/* ──────────────────────────────────────────────────────────
+   Typography
+────────────────────────────────────────────────────────── */
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap");
+
+:root {
+  --font-heading: "Geom", "Space Grotesk", sans-serif;
+  --font-display: "Georgia", serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+}
+
+/* ──────────────────────────────────────────────────────────
+   App colour tokens (dark theme)
+────────────────────────────────────────────────────────── */
+:root {
+  --app-bg: #111113;
+  --app-bg-raised: #18181b;
+  --app-text: #fafafa;
+  --app-text-muted: #71717a;
+  --app-border: #27272a;
+  --app-hover: #1c1c1f;
+  --app-primary: #fafafa;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Global resets
+────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--app-bg);
+  color: var(--app-text);
+  font-family: var(--font-display);
+  overflow: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  margin: 0;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}

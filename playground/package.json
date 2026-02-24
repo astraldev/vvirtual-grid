@@ -1,0 +1,21 @@
+{
+  "name": "vvirtual-grid-playground",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@primeuix/themes": "^2.0.3",
+    "@primevue/nuxt-module": "^4.5.4",
+    "nuxt": "^4.3.1",
+    "primevue": "^4.5.4",
+    "vue": "^3.5.28",
+    "vue-router": "^4.6.4",
+    "vvirtual-grid": "workspace:*"
+  }
+}

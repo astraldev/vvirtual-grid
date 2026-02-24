@@ -21,7 +21,7 @@
   </component>
 </template>
 
-<script lang="ts" setup>
+<script lang="ts" setup generic="T extends object">
 import type { VueInstance } from "@vueuse/core";
 import { once } from "ramda";
 import {
@@ -42,6 +42,7 @@ import {
 import { fromProp, fromResizeObserver } from "./utilites";
 import { fromScrollParent } from "./composables/useFromScrollParent";
 import { useObservable } from "./composables/useObservable";
+import type { Observable } from "rxjs";
 
 const props = defineProps({
   /** Total number of items in the list  */
@@ -53,7 +54,7 @@ const props = defineProps({
 
   /* The callback that returns a page of items as a promise. */
   pageProvider: {
-    type: Function as PropType<PageProvider>,
+    type: Function as PropType<PageProvider<T>>,
     required: true,
   },
 
@@ -151,7 +152,7 @@ onUpdated(
   }),
 );
 
-const buffer = useObservable(buffer$);
+const buffer = useObservable<InternalItem<T>[]>(buffer$ as Observable<InternalItem<T>[]>);
 const contentSize = useObservable(contentSize$);
 const rootStyles = computed<StyleValue>(() =>
   Object.fromEntries([
@@ -169,6 +170,8 @@ watch(
   () => (keyPrefix.value = String(new Date().getTime())),
   { immediate: true },
 );
+
+watch(buffer, (buf) => console.log(buf, buffer$), { immediate: true })
 
 const allItems = useObservable(allItems$);
 defineExpose({ allItems });

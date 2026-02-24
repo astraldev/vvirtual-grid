@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "format": "oxfmt"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@nuxt/module-builder": "^1.0.2",
