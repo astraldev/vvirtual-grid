@@ -274,19 +274,41 @@ export function accumulateBuffer(
   buffer: InternalItem[],
   visibleItems: InternalItem[],
 ): InternalItem[] {
-  const itemsToAdd = difference(visibleItems, buffer);
-  const itemsFreeToUse = difference(buffer, visibleItems);
+  const visibleIndexSet = new Set(visibleItems.map((item) => item.index));
+  const bufferIndexSet = new Set(buffer.map((item) => item.index));
 
-  const replaceMap = new Map(zip(itemsFreeToUse, itemsToAdd));
-  const itemsToBeReplaced = [...replaceMap.keys()];
-  const itemsToReplaceWith = [...replaceMap.values()];
+  // Keyed by index so retained slots always reflect the latest value/style (e.g. placeholder → real).
+  const visibleByIndex = new Map(
+    visibleItems.map((item) => [item.index, item]),
+  );
 
-  const itemsToDelete = difference(itemsFreeToUse, itemsToBeReplaced);
-  const itemsToAppend = difference(itemsToAdd, itemsToReplaceWith);
+  const itemsToAdd = visibleItems.filter(
+    (item) => !bufferIndexSet.has(item.index),
+  );
+  const itemsFreeToUse = buffer.filter(
+    (item) => !visibleIndexSet.has(item.index),
+  );
+
+  // Reuse existing DOM slots for newly-visible items before allocating new ones.
+  const replaceMap = new Map<InternalItem, InternalItem>(
+    zip(itemsFreeToUse, itemsToAdd) as [InternalItem, InternalItem][],
+  );
+  const itemsToBeReplaced = new Set(replaceMap.keys());
+  const itemsToReplaceWith = new Set(replaceMap.values());
+
+  const itemsToDelete = itemsFreeToUse.filter(
+    (item) => !itemsToBeReplaced.has(item),
+  );
+  const itemsToAppend = itemsToAdd.filter(
+    (item) => !itemsToReplaceWith.has(item),
+  );
 
   return pipe(
     without(itemsToDelete),
-    ramdaMap((item) => replaceMap.get(item) ?? item),
+    ramdaMap(
+      (item: InternalItem) =>
+        replaceMap.get(item) ?? visibleByIndex.get(item.index) ?? item,
+    ),
     concat(__, itemsToAppend),
   )(buffer);
 }

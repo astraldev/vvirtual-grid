@@ -396,4 +396,27 @@ describe("accumulateBuffer", () => {
     const newBuffer = accumulateBuffer(buffer, visibleItems);
     expect(newBuffer).toEqual(visibleItems);
   });
+
+  it("replaces placeholder items (value=undefined) when real data arrives for the same index", () => {
+    const placeholder = {
+      index: 0,
+      value: undefined,
+      style: { gridArea: "1/1", transform: "translate(0px, 0px)" },
+    };
+    const buffer = [placeholder];
+
+    const visibleItems = [
+      {
+        index: 0,
+        value: "a",
+        style: { gridArea: "1/1", transform: "translate(0px, 0px)" },
+      },
+    ];
+
+    const newBuffer = accumulateBuffer(buffer, visibleItems);
+
+    expect(newBuffer).toEqual(visibleItems);
+    expect(newBuffer).toHaveLength(1);
+    expect(newBuffer[0].value).toBe("a");
+  });
 });
