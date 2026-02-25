@@ -177,14 +177,14 @@ interface ItemsByPage {
 export type PageProvider<T = unknown> = (
   pageNumber: number,
   pageSize: number,
-) => Promise<T[]>;
+) => Promise<T[]> | T[];
 
 export function callPageProvider(
   pageNumber: number,
   pageSize: number,
   pageProvider: PageProvider,
 ): Promise<ItemsByPage> {
-  return pageProvider(pageNumber, pageSize).then((items) => ({
+  return Promise.resolve(pageProvider(pageNumber, pageSize)).then((items) => ({
     pageNumber,
     items,
   }));

@@ -15,6 +15,7 @@
         name="placeholder"
         :index="internalItem.index"
         :style="internalItem.style"
+        :total="buffer.length"
       />
       <slot
         v-else
@@ -22,6 +23,7 @@
         :item="internalItem.value"
         :index="internalItem.index"
         :style="internalItem.style"
+        :total="buffer.length"
       />
     </template>
     <component v-if="!ready" :is="probeTag" :style="ssrProbeStyles" ref="probe">
