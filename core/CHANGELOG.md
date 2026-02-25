@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.1.3
+
+[compare changes](https://github.com/astraldev/vvirtual-grid/compare/v1.1.2...v1.1.3)
+
+### 🏡 Chore
+
+- Switch from unbuild to tsdown ([2e44a7f](https://github.com/astraldev/vvirtual-grid/commit/2e44a7f))
+
+### ❤️ Contributors
+
+- Ekure Edem ([@astraldev](https://github.com/astraldev))
+
 ## v1.1.2
 
 [compare changes](https://github.com/astraldev/vvirtual-grid/compare/v1.1.1...v1.1.2)
