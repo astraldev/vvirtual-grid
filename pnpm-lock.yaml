@@ -16,7 +16,7 @@ catalogs:
       specifier: ^4.0.18
       version: 4.0.18
     vue:
-      specifier: ^3.5.28
+      specifier: ^3.5.0
       version: 3.5.29
     vue-tsc:
       specifier: ^3.2.4
