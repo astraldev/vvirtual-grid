@@ -274,8 +274,20 @@ export function accumulateBuffer(
   buffer: InternalItem[],
   visibleItems: InternalItem[],
 ): InternalItem[] {
-  const itemsToAdd = difference(visibleItems, buffer);
-  const itemsFreeToUse = difference(buffer, visibleItems);
+  const bufferByIndex = new Map(buffer.map((item) => [item.index, item]));
+
+  // Don't downgrade a loaded item to a placeholder — transient undefined emissions
+  // from allItems$ (e.g. when page size changes before the new page has loaded).
+  const effectiveVisible = visibleItems.map((item) => {
+    if (item.value === undefined) {
+      const buffered = bufferByIndex.get(item.index);
+      if (buffered?.value !== undefined) return buffered;
+    }
+    return item;
+  });
+
+  const itemsToAdd = difference(effectiveVisible, buffer);
+  const itemsFreeToUse = difference(buffer, effectiveVisible);
 
   const replaceMap = new Map(zip(itemsFreeToUse, itemsToAdd));
   const itemsToBeReplaced = [...replaceMap.keys()];
