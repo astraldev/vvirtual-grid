@@ -16,6 +16,11 @@
     "type": "git",
     "url": "git+https://github.com/astraldev/vvirtual-grid.git"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "type": "module",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -35,7 +40,7 @@
   },
   "scripts": {
     "build": "unbuild",
-    "release": "changelogen --release && npm publish --access public && git push --follow-tags",
+    "release": "pnpm run build && changelogen --release && npm publish --access public && git push --follow-tags",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "format": "oxfmt",
