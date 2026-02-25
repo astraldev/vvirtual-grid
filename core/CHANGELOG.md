@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.1.4
+
+[compare changes](https://github.com/astraldev/vvirtual-grid/compare/v1.1.3...v1.1.4)
+
+### 🩹 Fixes
+
+- Resolve placeholder glitching issue ([9fb7afa](https://github.com/astraldev/vvirtual-grid/commit/9fb7afa))
+
+### ❤️ Contributors
+
+- Ekure Edem ([@astraldev](https://github.com/astraldev))
+
 ## v1.1.3
 
 [compare changes](https://github.com/astraldev/vvirtual-grid/compare/v1.1.2...v1.1.3)
