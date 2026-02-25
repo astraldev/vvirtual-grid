@@ -21,25 +21,26 @@
     "README.md",
     "LICENSE"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs"
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
     },
     "./vue": {
-      "types": "./dist/vue/index.d.ts",
-      "import": "./dist/vue/index.mjs"
+      "types": "./dist/integrations/vue/index.d.ts",
+      "import": "./dist/integrations/vue/index.js"
     },
     "./nuxt": {
-      "types": "./dist/nuxt/module.d.ts",
-      "import": "./dist/nuxt/module.mjs"
+      "types": "./dist/integrations/nuxt/module.d.ts",
+      "import": "./dist/integrations/nuxt/module.js"
     }
   },
   "scripts": {
-    "build": "unbuild",
+    "build": "tsdown",
     "release": "pnpm run build && changelogen --patch --release && npm publish --access public && git push --follow-tags",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
@@ -54,16 +55,16 @@
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@arethetypeswrong/core": "^0.18.2",
     "@nuxt/kit": "^3.17.0",
     "@nuxt/schema": "^4.3.1",
+    "@rollup/plugin-replace": "^6.0.3",
     "@types/ramda": "^0.31.1",
-    "@vitejs/plugin-vue": "^6.0.4",
     "happy-dom": "^17.1.0",
-    "lodash-es": "catalog:",
-    "mkdist": "^2.4.1",
+    "publint": "^0.3.17",
+    "tsdown": "^0.20.3",
     "typescript": "catalog:",
-    "unbuild": "^3.6.1",
-    "vite": "^7.3.1",
+    "unplugin-vue": "^7.1.1",
     "vitest": "catalog:",
     "vue": "catalog:",
     "vue-tsc": "catalog:"
