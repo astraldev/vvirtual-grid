@@ -1,7 +1,28 @@
 # Changelog
 
+## v1.1.2
 
-## v1.2.0
+[compare changes](https://github.com/astraldev/vvirtual-grid/compare/v1.1.1...v1.1.2)
+
+### 🚀 Enhancements
+
+- Make page provider not require async functions ([bf5a485](https://github.com/astraldev/vvirtual-grid/commit/bf5a485))
+
+### 🩹 Fixes
+
+- Resolve issue with package types conflicting user with builds ([5f3f581](https://github.com/astraldev/vvirtual-grid/commit/5f3f581))
+- Resolve peer dependency issues for vue ([52036b0](https://github.com/astraldev/vvirtual-grid/commit/52036b0))
+
+### 🤖 CI
+
+- Change postinstall to prepare script ([8c205cb](https://github.com/astraldev/vvirtual-grid/commit/8c205cb))
+- Remove prepare script for playground ([3a07fbc](https://github.com/astraldev/vvirtual-grid/commit/3a07fbc))
+
+### ❤️ Contributors
+
+- Ekure Edem
+
+## v1.1.1
 
 [compare changes](https://github.com/astraldev/vvirtual-grid/compare/legacy...v1.2.0)
 
