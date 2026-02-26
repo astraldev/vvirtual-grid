@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.1.6
+
+[compare changes](https://github.com/astraldev/vvirtual-grid/compare/v1.1.5...v1.1.6)
+
+### 🩹 Fixes
+
+- **pipeline:** Ensure that data is properly refreshed and recomputed when length is changed ([8138131](https://github.com/astraldev/vvirtual-grid/commit/8138131))
+
+### 🏡 Chore
+
+- Include benchmarking ([14c8da9](https://github.com/astraldev/vvirtual-grid/commit/14c8da9))
+
+### ❤️ Contributors
+
+- Ekure Edem ([@astraldev](https://github.com/astraldev))
+
 ## v1.1.5
 
 [compare changes](https://github.com/astraldev/vvirtual-grid/compare/v1.1.4...v1.1.5)
