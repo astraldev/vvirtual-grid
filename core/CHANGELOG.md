@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.1.5
+
+[compare changes](https://github.com/astraldev/vvirtual-grid/compare/v1.1.4...v1.1.5)
+
+### 🩹 Fixes
+
+- **pipeline:** Fix issue with corrupt lists due to dynamic page size changes ([75a87da](https://github.com/astraldev/vvirtual-grid/commit/75a87da))
+
+### ❤️ Contributors
+
+- Ekure Edem ([@astraldev](https://github.com/astraldev))
+
 ## v1.1.4
 
 [compare changes](https://github.com/astraldev/vvirtual-grid/compare/v1.1.3...v1.1.4)
