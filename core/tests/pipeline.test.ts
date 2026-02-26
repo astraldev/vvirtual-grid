@@ -2,6 +2,9 @@ import { describe, it, expect } from "vitest";
 import { pipeline } from "../src/pipeline";
 import { of, firstValueFrom } from "rxjs";
 import type { PageProvider } from "../src/pipeline";
+import { ref, computed, reactive, nextTick } from "vue";
+import { createPageProvider } from "../src";
+import { fromProp } from "../src/utilites";
 
 describe("pipeline integration", () => {
   const mockItemRect = {
@@ -52,5 +55,52 @@ describe("pipeline integration", () => {
     expect(firstBuffer[0].index).toBe(0);
     expect(firstBuffer[0].value).toBeDefined();
     expect(firstBuffer[0].style).toBeUndefined(); // SSR items shouldn't have style yet
+  });
+
+  it("ensure that data is recomputed after dependency changes", async () => {
+    const data = ref([0, 1, 2, 3]);
+
+    const length = computed(() => data.value.length);
+    const pageProvider = createPageProvider(data);
+
+    const props = reactive({
+      data,
+      length,
+      pageProvider,
+      pageSize: 3,
+    });
+
+    const { buffer$ } = await pipeline({
+      length$: fromProp(props, "length"),
+      pageProvider$: fromProp(props, "pageProvider"),
+      pageProviderDebounceTime$: of(0),
+      pageSize$: fromProp(props, "pageSize"),
+      itemRect$: of(mockItemRect),
+      rootResize$: of(mockRoot),
+      scroll$: of(mockRoot),
+      respectScrollToOnResize$: of(true),
+      scrollTo$: of(undefined),
+    });
+
+    const firstBuffer = await firstValueFrom(buffer$);
+    expect(firstBuffer[0].value as any).toBe(0);
+
+    let latestBuffer: any[] = [];
+    const sub = buffer$.subscribe((b) => {
+      latestBuffer = b;
+    });
+
+    // Change the reactive list
+    data.value = [4, 5, 6];
+
+    // 1 tick for the prop to update
+    await nextTick();
+
+    // 1 tick for the data to be computed
+    await nextTick();
+
+    expect(latestBuffer.length).toBeGreaterThan(0);
+    expect(latestBuffer[0].value as any).toBe(4);
+    sub.unsubscribe();
   });
 });

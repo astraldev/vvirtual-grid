@@ -21,9 +21,6 @@
     "README.md",
     "LICENSE"
   ],
-  "engines": {
-    "node": ">=20"
-  },
   "type": "module",
   "exports": {
     ".": {
@@ -71,5 +68,8 @@
   },
   "peerDependencies": {
     "vue": "catalog:"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

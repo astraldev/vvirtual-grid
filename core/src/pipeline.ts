@@ -1,4 +1,5 @@
 import {
+  BehaviorSubject,
   combineLatest,
   debounceTime,
   distinctUntilChanged,
@@ -351,6 +352,7 @@ interface PipelineOutput {
   scrollAction$: Observable<ScrollAction>;
   allItems$: Observable<unknown[]>;
   ready$: Observable<boolean>;
+  recompute: () => Promise<void>;
 }
 
 type AsyncPipelineOutput = Promise<PipelineOutput>;
@@ -371,6 +373,8 @@ export async function pipeline({
     firstValueFrom(pageProvider$),
     firstValueFrom(pageSize$),
   ]);
+
+  const manualRecompute$ = new BehaviorSubject(0);
   const { items: ssrPageItems } = await callPageProvider(
     0,
     ssrPageSize,
@@ -483,10 +487,15 @@ export async function pipeline({
       ),
     );
 
-  const memorizedPageProvider$: Observable<PageProvider> = pageProvider$.pipe(
-    map<PageProvider, PageProvider>((f) =>
+  const memorizedPageProvider$: Observable<PageProvider> = combineLatest([
+    pageProvider$,
+    length$.pipe(distinctUntilChanged()),
+    manualRecompute$,
+  ]).pipe(
+    map<[PageProvider, number, number], PageProvider>(([f, length]) =>
       memoizeWith(
-        (pageNumber: number, pageSize: number) => `${pageNumber},${pageSize}`,
+        (pageNumber: number, pageSize: number) =>
+          `${length}:${pageNumber},${pageSize}`,
         f,
       ),
     ),
@@ -501,21 +510,24 @@ export async function pipeline({
     mergeMap<
       [Observable<number>, number, PageProvider],
       Observable<ItemsByPage>
-    >(([pageNumber$, pageSize, memorizedPageProvider]) =>
-      pageNumber$.pipe(
+    >(([pageNumber$, pageSize, memorizedPageProvider]) => {
+      return pageNumber$.pipe(
         mergeMap<number, Promise<ItemsByPage>>((pageNumber) =>
           callPageProvider(pageNumber, pageSize, memorizedPageProvider),
         ),
-      ),
-    ),
+      );
+    }),
     shareReplay<ItemsByPage>(1),
   );
 
   const replayLength$: Observable<number> = length$.pipe(shareReplay(1));
 
   const allItems$: Observable<unknown[]> = memorizedPageProvider$.pipe(
-    switchMap(() => combineLatest([itemsByPage$, replayLength$])),
-    scan(accumulateAllItems, []),
+    switchMap(() =>
+      combineLatest([itemsByPage$, replayLength$]).pipe(
+        scan(accumulateAllItems, []),
+      ),
+    ),
     shareReplay(1),
   );
 
@@ -535,11 +547,15 @@ export async function pipeline({
     startWith(ssrBuffer),
   );
 
-  const ready$: Observable<boolean> = domItems$.pipe(
-    map(() => true),
-    startWith(false),
-    distinctUntilChanged(),
-  );
+  const ready$: Observable<boolean> = merge(
+    manualRecompute$.pipe(map(() => false)),
+    domItems$.pipe(map(() => true)),
+  ).pipe(distinctUntilChanged(), shareReplay(1));
 
-  return { buffer$, contentSize$, scrollAction$, allItems$, ready$ };
+  async function recompute() {
+    manualRecompute$.next(manualRecompute$.value + 1);
+    await firstValueFrom(ready$.pipe(filter((v) => v === true)));
+  }
+
+  return { buffer$, contentSize$, scrollAction$, allItems$, ready$, recompute };
 }
