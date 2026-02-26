@@ -156,7 +156,7 @@ describe("accumulateAllItems", () => {
   it("can extend allItems", () => {
     const allItems = accumulateAllItems(
       [0, 1, 2, 3, 4, 5],
-      [{ pageNumber: 1, items: ["a", "b", "c"] }, 10, 3],
+      [{ pageNumber: 1, items: ["a", "b", "c"], pageSize: 3 }, 10],
     );
 
     expect(allItems).toEqual([
@@ -176,7 +176,7 @@ describe("accumulateAllItems", () => {
   it("can shrink allItems", () => {
     const allItems = accumulateAllItems(
       [0, 1, 2, 3, 4, 5, 6],
-      [{ pageNumber: 0, items: ["a", "b", "c"] }, 5, 3],
+      [{ pageNumber: 0, items: ["a", "b", "c"], pageSize: 3 }, 5],
     );
 
     expect(allItems).toEqual(["a", "b", "c", 3, 4]);
@@ -185,7 +185,7 @@ describe("accumulateAllItems", () => {
   it("behave properly when pageProvider returns fewer items than pageSize", () => {
     const allItems = accumulateAllItems(
       [0, 1, 2, 3, 4, 5],
-      [{ pageNumber: 0, items: ["a", "b"] }, 6, 3],
+      [{ pageNumber: 0, items: ["a", "b"], pageSize: 3 }, 6],
     );
 
     expect(allItems).toEqual(["a", "b", undefined, 3, 4, 5]);
@@ -194,10 +194,19 @@ describe("accumulateAllItems", () => {
   it("behave properly when pageProvider returns more items than pageSize", () => {
     const allItems = accumulateAllItems(
       [0, 1, 2, 3, 4, 5],
-      [{ pageNumber: 0, items: ["a", "b", "c", "d"] }, 6, 3],
+      [{ pageNumber: 0, items: ["a", "b", "c", "d"], pageSize: 3 }, 6],
     );
 
     expect(allItems).toEqual(["a", "b", "c", 3, 4, 5]);
+  });
+
+  it("maintains correct offsets when pageSize changes mid-flight", () => {
+    const allItems = accumulateAllItems(
+      [0, 1, 2, 3, 4, 5],
+      [{ pageNumber: 1, items: ["a", "b"], pageSize: 2 }, 6],
+    );
+
+    expect(allItems).toEqual([0, 1, "a", "b", 4, 5]);
   });
 });
 

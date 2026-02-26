@@ -172,6 +172,7 @@ export function getObservableOfVisiblePageNumbers(
 interface ItemsByPage {
   pageNumber: number;
   items: unknown[];
+  pageSize: number;
 }
 
 export type PageProvider<T = unknown> = (
@@ -187,12 +188,13 @@ export function callPageProvider(
   return Promise.resolve(pageProvider(pageNumber, pageSize)).then((items) => ({
     pageNumber,
     items,
+    pageSize,
   }));
 }
 
 export function accumulateAllItems(
   allItems: unknown[],
-  [{ pageNumber, items }, length, pageSize]: [ItemsByPage, number, number],
+  [{ pageNumber, items, pageSize }, length]: [ItemsByPage, number],
 ): unknown[] {
   const allItemsFill = Array.from(
     { length: Math.max(length - allItems.length, 0) },
@@ -510,12 +512,9 @@ export async function pipeline({
   );
 
   const replayLength$: Observable<number> = length$.pipe(shareReplay(1));
-  const replayPageSize$: Observable<number> = pageSize$.pipe(shareReplay(1));
 
   const allItems$: Observable<unknown[]> = memorizedPageProvider$.pipe(
-    switchMap(() =>
-      combineLatest([itemsByPage$, replayLength$, replayPageSize$]),
-    ),
+    switchMap(() => combineLatest([itemsByPage$, replayLength$])),
     scan(accumulateAllItems, []),
     shareReplay(1),
   );
