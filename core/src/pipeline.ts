@@ -487,36 +487,42 @@ export async function pipeline({
       ),
     );
 
-  const memorizedPageProvider$: Observable<PageProvider> = combineLatest([
-    pageProvider$,
-    length$.pipe(distinctUntilChanged()),
-    manualRecompute$,
-  ]).pipe(
-    map<[PageProvider, number, number], PageProvider>(([f, length]) =>
+  const memorizedPageProvider$: Observable<
+    (
+      pageNumber: number,
+      pageSize: number,
+      version: number,
+    ) => Promise<unknown[]> | unknown[]
+  > = combineLatest([pageProvider$, length$.pipe(distinctUntilChanged())]).pipe(
+    map(([f, length]) =>
       memoizeWith(
-        (pageNumber: number, pageSize: number) =>
-          `${length}:${pageNumber},${pageSize}`,
-        f,
+        (pageNumber: number, pageSize: number, version: number) =>
+          `${length}:${pageNumber},${pageSize},${version}`,
+        (pageNumber: number, pageSize: number, _version: number) =>
+          f(pageNumber, pageSize),
       ),
     ),
     shareReplay(1),
   );
 
-  const itemsByPage$: Observable<ItemsByPage> = combineLatest([
-    debouncedVisiblePageNumbers$,
-    pageSize$,
-    memorizedPageProvider$,
-  ]).pipe(
-    mergeMap<
-      [Observable<number>, number, PageProvider],
-      Observable<ItemsByPage>
-    >(([pageNumber$, pageSize, memorizedPageProvider]) => {
-      return pageNumber$.pipe(
-        mergeMap<number, Promise<ItemsByPage>>((pageNumber) =>
-          callPageProvider(pageNumber, pageSize, memorizedPageProvider),
-        ),
-      );
-    }),
+  const itemsByPage$: Observable<ItemsByPage> = manualRecompute$.pipe(
+    switchMap((version) =>
+      combineLatest([
+        debouncedVisiblePageNumbers$,
+        pageSize$,
+        memorizedPageProvider$,
+      ]).pipe(
+        mergeMap(([pageNumber$, pageSize, memorizedPageProvider]) => {
+          return pageNumber$.pipe(
+            mergeMap<number, Promise<ItemsByPage>>((pageNumber) =>
+              callPageProvider(pageNumber, pageSize, (p, s) =>
+                memorizedPageProvider(p, s, version),
+              ),
+            ),
+          );
+        }),
+      ),
+    ),
     shareReplay<ItemsByPage>(1),
   );
 
