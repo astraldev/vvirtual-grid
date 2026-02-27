@@ -38,12 +38,18 @@ describe("pipeline performance", () => {
     scrollTo$: of(undefined),
   };
 
-  bench("initialization and first emission (100k items)", async () => {
+  const intl = Intl.NumberFormat("en-US", {
+    notation: "compact",
+  });
+
+  const formatter = (n: number) => intl.format(n);
+
+  bench(`Initialization (${formatter(length)} items, ${formatter(pageSize)}/page)`, async () => {
     const { ready$ } = await pipeline(input);
     await firstValueFrom(ready$.pipe(filter((v) => v === true)));
   });
 
-  bench("first emission & recompute (100k items)", async () => {
+  bench(`Initialization + Recompute (${formatter(length)} items, ${formatter(pageSize)}/page)`, async () => {
     const { ready$, recompute } = await pipeline(input);
     await firstValueFrom(ready$.pipe(filter((v) => v === true)));
     await recompute();
