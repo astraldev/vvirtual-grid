@@ -21,8 +21,8 @@ describe("pipeline performance", () => {
   Object.defineProperty(window, "innerWidth", { value: 1024 });
   Object.defineProperty(window, "innerHeight", { value: 768 });
 
-  const length = 100_000;
-  const pageSize = 100;
+  const length = 1_000_000;
+  const pageSize = 1500;
 
   const pageProvider = createPageProvider(Array.from({ length }));
 

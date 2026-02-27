@@ -25,12 +25,10 @@ import {
   difference,
   equals,
   identity,
-  insertAll,
   isNil,
   map as ramdaMap,
   memoizeWith,
   pipe,
-  remove,
   slice,
   without,
   zip,
@@ -197,23 +195,20 @@ export function accumulateAllItems(
   allItems: unknown[],
   [{ pageNumber, items, pageSize }, length]: [ItemsByPage, number],
 ): unknown[] {
-  const allItemsFill = Array.from(
-    { length: Math.max(length - allItems.length, 0) },
-    () => undefined,
-  );
-  const pageFill = Array.from(
-    { length: Math.max(pageSize - items.length, 0) },
-    () => undefined,
-  );
+  // Update length if necessary in memory
+  if (allItems.length !== length) {
+    allItems.length = length;
+  }
 
-  const normalizedItems = concat(slice(0, pageSize, items), pageFill);
+  const start = pageNumber * pageSize;
+  const end = Math.min(start + pageSize, length);
 
-  return pipe<unknown[][], unknown[], unknown[], unknown[], unknown[]>(
-    concat(__, allItemsFill),
-    remove(pageNumber * pageSize, pageSize),
-    insertAll(pageNumber * pageSize, normalizedItems),
-    slice(0, length),
-  )(allItems);
+  for (let i = start; i < end; i++) {
+    const localIndex = i - start;
+    allItems[i] = localIndex < items.length ? items[localIndex] : undefined;
+  }
+
+  return allItems;
 }
 
 interface ItemOffset {

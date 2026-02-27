@@ -25,7 +25,7 @@ async function runProfile() {
 
   const length = 1_000_000;
   const pageSize = 1000;
-  const workoadSize = 500; // 500 times
+  const workoadSize = 15_000; // 15k times
 
   logger.start(`Starting workload test (${workoadSize} iterations)...`);
   const pageProvider = createPageProvider(Array.from({ length }));

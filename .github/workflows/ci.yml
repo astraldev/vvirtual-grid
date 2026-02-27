@@ -48,3 +48,9 @@ jobs:
 
       - name: Test
         run: pnpm run test
+
+      - name: Benchmark & Report
+        run: pnpm --filter=vvirtual-grid run bench:report
+
+      - name: Coverage
+        run: pnpm --filter=vvirtual-grid run coverage
