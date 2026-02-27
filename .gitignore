@@ -39,3 +39,10 @@ __screenshots__/
 *.timestamp-*-*.mjs
 .nuxt/
 .data/
+
+# Profiling scripts artifacts
+core/scripts/pipeline.mjs
+core/scripts/pipeline.mjs.map
+core/scripts/pipeline.js
+core/scripts/pipeline.js.map
+core/profiles/
