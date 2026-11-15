@@ -44,6 +44,43 @@ are index arithmetic, O(1), with no per-item state.
 - One `ResizeObserver` entry per rendered item with `dynamicSize`.
 - Scroll benchmark with the props on and off. With them off, nothing may change.
 
+## v2: move the pipeline to RxJS 9
+
+For the `v2` branch. RxJS 9 is in beta (`9.0.0-beta.1`, npm tag `next`). RxJS 7.8.2 stays the
+`latest` tag until 9 is released, so wait for a stable 9 before publishing on it.
+
+RxJS 9 is not a version bump. It builds on the browser's own `Observable` and ships no `.pipe`,
+no pipeable operators and no schedulers. The pipeline is rewritten, not migrated.
+
+### What changes
+
+- **Imports:** one subpath per operator, used as a Symbol-keyed method:
+  `import { map } from "rxjs/map"`, then `source[map](fn)`.
+- **No direct replacement:** `debounceTime`, `firstValueFrom`, `mergeAll`, `range`,
+  `animationFrameScheduler` and `scheduled`. Candidates are `rxjs/debounce` with `rxjs/timer`,
+  `rxjs/first` and `rxjs/animation-frames`. Check each one's behaviour before using it.
+- **Sharing:** the platform `Observable` shares one producer between concurrent subscribers. Every
+  `shareReplay` and `BehaviorSubject` in `pipeline()` needs its lifecycle decided again. RxJS's
+  `MIGRATION.md` lists the choices.
+- **Public API:** `pipeline()` takes and returns RxJS 7 Observables, so this is a breaking change.
+- **Tests:** the marble tests in `tests/buffer.test.ts` use `rxjs/testing`. Rewrite them.
+
+### Measure before deciding
+
+Measured on 2026-11-16, minified, with esbuild:
+
+| Operator set the grid needs | Minified | Gzip |
+| --- | --- | --- |
+| RxJS 7.8.2 | 29.8 KB | 9.0 KB |
+| RxJS 9.0.0-beta.1 | 26.5 KB | 7.8 KB |
+
+- 13.1 KB of the RxJS 9 figure is `@rxjs/observable-polyfill`. RxJS 9 imports it in every build,
+  for browsers without a native `Observable`.
+- The saving over RxJS 7 is about 1.2 KB gzip. A pipeline on Vue reactivity alone would save about
+  9 KB gzip. Compare both before starting.
+- Check that the polyfill can be left out for projects that only target browsers with a native
+  `Observable`.
+
 ## Review notes on PR #3
 
 - Drop the `valueRef` alias in `useObservable` and write to `target` directly.
