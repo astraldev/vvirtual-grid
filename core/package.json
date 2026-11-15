@@ -45,7 +45,7 @@
   },
   "scripts": {
     "build": "tsdown",
-    "release": "pnpm run build && changelogen --patch --release && npm publish --access public && git push --follow-tags",
+    "release": "pnpm run build && changelogen --patch --release && git push --follow-tags",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "format": "oxfmt",
