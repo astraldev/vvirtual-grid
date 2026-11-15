@@ -11,6 +11,7 @@ export default defineConfig({
     "./integrations/nuxt/module.ts",
     "./integrations/vue/index.ts",
     "./src/index.ts",
+    "./src/primitives.ts",
   ],
   format: ["esm"],
   minify: false,

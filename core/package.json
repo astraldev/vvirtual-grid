@@ -22,10 +22,17 @@
     "LICENSE"
   ],
   "type": "module",
+  "sideEffects": false,
+  "module": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/src/index.d.ts",
       "import": "./dist/src/index.js"
+    },
+    "./primitives": {
+      "types": "./dist/src/primitives.d.ts",
+      "import": "./dist/src/primitives.js"
     },
     "./vue": {
       "types": "./dist/integrations/vue/index.d.ts",
