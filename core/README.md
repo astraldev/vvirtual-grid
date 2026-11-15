@@ -3,6 +3,7 @@
 A reusable component for Vue 3 that renders a list with a huge number of
 items (e.g. 1000+ items) as a grid in a performant way.
 
+- [Documentation](https://vvirtual-grid.com)
 - [NPM Package][npm]
 
 ## Features
@@ -34,23 +35,43 @@ import { VirtualGrid } from "vvirtual-grid/vue";
 </script>
 
 <template>
-  <VirtualGrid
-    :length="1000"
-    :pageProvider="async (pageNumber, pageSize) => Array(pageSize).fill('x')"
-    :pageSize="40"
-    :scrollTo="10"
-  >
-    <template v-slot:default="{ item, style, index }">
-      <div :style="style">{{ item }} {{ index }}</div>
-    </template>
-    <template v-slot:placeholder="{ index, style }">
-      <div :style="style">Placeholder {{ index }}</div>
-    </template>
-    <template v-slot:probe>
-      <div class="item">Probe</div>
-    </template>
-  </VirtualGrid>
+  <div class="scroller">
+    <VirtualGrid
+      class="grid"
+      :length="1000"
+      :pageProvider="async (pageNumber, pageSize) => Array(pageSize).fill('x')"
+      :pageSize="40"
+    >
+      <template v-slot:default="{ item, style, index }">
+        <div :style="style" class="item">{{ item }} {{ index }}</div>
+      </template>
+      <template v-slot:placeholder="{ index, style }">
+        <div :style="style" class="item">Placeholder {{ index }}</div>
+      </template>
+      <template v-slot:probe>
+        <div class="item" />
+      </template>
+    </VirtualGrid>
+  </div>
 </template>
+```
+
+The grid scrolls inside the nearest ancestor that scrolls. It is a CSS grid, and
+the probe has the size of one item:
+
+```css
+.scroller {
+  height: 24rem;
+  overflow-y: auto;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.item {
+  height: 6rem;
+}
 ```
 
 Or register it globally as a plugin:
@@ -81,7 +102,7 @@ export default defineNuxtConfig({
 | Name                       | Description                                                                      | Type                                                     | Validation                                                       |
 | -------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------- |
 | `length`                   | The number of items in the list                                                  | `number`                                                 | Required, an integer greater than or equal to 0                  |
-| `pageProvider`             | The callback that returns a page of items as a promise. `pageNumber` starts at 0 | `(pageNumber: number, pageSize: number) => Promise<T[]>` | Required                                                         |
+| `pageProvider`             | The callback that returns the items of one page, as an array or a promise. `pageNumber` starts at 0 | `(pageNumber: number, pageSize: number) => Promise<T[]> \| T[]` | Required                                                         |
 | `pageSize`                 | The number of items in a page from the item provider (e.g. a backend API)        | `number`                                                 | Required, an integer greater than or equal to 1                  |
 | `pageProviderDebounceTime` | **Most important for network providers.** Milliseconds to wait before calling `pageProvider`. Pages skipped meanwhile are never requested | `number`                                                 | Optional, an integer greater than or equal to 0, defaults to `0` |
 | `probeTag`                 | The HTML tag used as probe element                                               | `string`                                                 | Optional, any valid HTML tag, defaults to `div`                  |
@@ -139,10 +160,12 @@ Example:
 The `probe` slot is used to measure the visual size of a grid item. It has no
 props. You can reuse the same element/component as the `placeholder` slot.
 
-**If not provided, you must set a fixed height to `grid-template-rows` in your
-CSS grid, e.g. `200px`. If provided, make sure it is styled with the same
-dimensions as rendered items in the `default` or `placeholder` slots. Otherwise
-the view won't render correctly, or rendering could be very slow.**
+Give the probe the same size as the items in the `default` and `placeholder`
+slots. The grid places every item at the probe's size, so a taller item overlaps
+the next row and a shorter one leaves a gap.
+
+Without a `probe` slot, set the row height on the grid with `grid-template-rows`
+or `grid-auto-rows`, for example `200px`.
 
 Example:
 
@@ -171,10 +194,28 @@ The grid emits three events. None of them carries a payload.
 | `layout-change`   | After the grid measured itself again (item size, gap, tracks or flow changed)                  |
 
 ```vue
-<VirtualGrid @render="onRender" @viewport-scroll="onViewportScroll" @layout-change="onLayoutChange" />
+<template>
+  <div class="scroller">
+    <VirtualGrid
+      class="grid"
+      :length="1000"
+      :pageProvider="pageProvider"
+      :pageSize="40"
+      @render="onRender"
+      @viewport-scroll="onViewportScroll"
+      @layout-change="onLayoutChange"
+    >
+      <!-- slots -->
+    </VirtualGrid>
+  </div>
+</template>
 ```
 
 ## Low-level Primitives
+
+The [primitives reference](https://vvirtual-grid.com/reference/primitives) and the
+[popovers guide](https://vvirtual-grid.com/guides/popovers) cover this section in
+full.
 
 The grid does not add ARIA roles, focus handling or overlays. Instead, it gives
 you the positions it already computes, so you can build them yourself. Use the
@@ -225,6 +266,9 @@ them correctly even though most of them are not in the DOM. (`role="grid"`
 needs `row` elements between the grid and its cells, which a flat list does
 not have. `getItemCell` gives you the numbers for `aria-rowindex` if you render
 such a structure yourself.)
+
+<details>
+<summary>Show the full component</summary>
 
 ```vue
 <script setup>
@@ -291,10 +335,13 @@ function show(event) {
 </template>
 ```
 
+</details>
+
 Where [CSS anchor positioning][anchor] is supported you can skip `place()`
-while the item is rendered: pass `createItemTracker({ onBind, onUnbind })` to
-the `render` event to set and clear `anchor-name` on the element of the
-anchored index, and give the popover a matching `position-anchor`.
+while the item is rendered. `createItemTracker({ onBind, onUnbind })` returns a
+function. Call it with the grid element in a `render` handler, set `anchor-name`
+on the anchored index's element in `onBind`, clear it in `onUnbind`, and give the
+popover a matching `position-anchor`.
 
 ## Scroll Mode
 

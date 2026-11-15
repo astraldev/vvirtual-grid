@@ -120,6 +120,12 @@ importers:
 
   docs:
     dependencies:
+      '@floating-ui/dom':
+        specifier: ^1.8.0
+        version: 1.8.0
+      '@floating-ui/vue':
+        specifier: ^2.0.1
+        version: 2.0.1(vue@3.5.45(typescript@5.9.3))
       docus:
         specifier: ^5.15.0
         version: 5.15.0(4509aaac668953f841b6d1adca3c90ea)
