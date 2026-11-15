@@ -6,8 +6,8 @@
 
 ### 🚀 Enhancements
 
-- `vvirtual-grid/primitives` returns the rectangle, row, column and element of any item, rendered or not. Each function takes one reusable object of named arguments ([7639592](https://github.com/astraldev/vvirtual-grid/commit/7639592), [f398081](https://github.com/astraldev/vvirtual-grid/commit/f398081))
-- `<VirtualGrid>` exposes `measurement` and accepts `onRender`, `onViewportScroll` and `onLayoutChange` ([7639592](https://github.com/astraldev/vvirtual-grid/commit/7639592))
+- `vvirtual-grid/primitives` gives the rectangle, row and column of any item, rendered or not, through reusable query objects: `getItemRect`, `getItemCell`, `getIndexByCell` and `createItemTracker`
+- `<VirtualGrid>` exposes `measurement` and emits `render`, `viewport-scroll` and `layout-change`
 
 ### 🩹 Fixes
 
@@ -19,7 +19,7 @@
 
 ### 📦 Build
 
-- The package is marked side-effect free, so bundlers drop exports you do not import ([6644e7b](https://github.com/astraldev/vvirtual-grid/commit/6644e7b))
+- The package is marked side-effect free ([6644e7b](https://github.com/astraldev/vvirtual-grid/commit/6644e7b))
 
 ### 📖 Documentation
 
