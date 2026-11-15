@@ -129,3 +129,69 @@ are index arithmetic, O(1), with no per-item state.
 - Run the editorial checklist (`dotfiles/.agents/skills/editorial/references/checklist.md`)
   on every page, item by item, and report it with evidence. It was not run on the first pass,
   only the banned-word and punctuation greps.
+
+## Left after the second docs review (not done)
+
+Decided, do not reopen: keep the C-API analogy on all three pages, keep the CSS anchor
+positioning and "Dispatch your own events" sections in the popovers guide, and do not
+introduce Tailwind in the docs.
+
+- Benchmarks page (`reference/benchmarks`): the 1.1.6 and 1.2.0 tables were written but the
+  page was not opened in a browser. Check the tables render.
+- The sideways sample in `guides/sizing-and-direction` now uses fixed row tracks
+  (`grid-rows-[repeat(2,150px)]`) and no height on the grid. The layout was tested by
+  overriding styles on the Introduction demo, not by running the sample itself.
+- Accessibility guide:
+  - "Choosing a role pattern" is reference material inside a guide. Move it to Reference.
+  - The note about Tab not entering the grid describes a break, so make it a warning. Also
+    cover the case where the focused index is a placeholder, which has no `tabindex`.
+  - "NVDA on Windows" and "VoiceOver" in the last step: say what each is, as the examples
+    page does.
+  - "as above" in the `aria-activedescendant` warning: name the step instead.
+  - Step 3 repeats the whole placeholder slot. Show only the added attribute.
+- Sizing guide:
+  - "Every item then gets the probe's width and height" is wrong. The grid positions items
+    as if they had the probe's size. It does not size them.
+  - Steps 1 and 2 have no code. The one sample under step 3 covers all three.
+  - `grid = useTemplateRef("grid")` and `ref="grid"` are unused in the samples.
+  - "Scroll to an item" is a props fact with no steps. Move it to the props table.
+  - "Check the order" names no action. Link `getItemCell` to its anchor.
+- Performance guide:
+  - "The grid itself is cheap" is a bare adjective. Say compared to what.
+  - The layout-thrashing sample leaves `query`, `popover` and `root` unsourced.
+  - "Handlers that read before they write show none" is wrong. Layout blocks still appear,
+    only the forced-reflow mark goes.
+  - "multiplies by the few hundred items": multiplies what. Check the re-render claim
+    against the architecture page.
+- Floating UI guide:
+  - Step 1 repeats the `DOMRect` field list from the primitives reference. Link it.
+  - "This is acceptable here" is a bare adjective.
+  - The `autoUpdate` section explains Floating UI internals. Cut to what the reader does.
+  - The check does not say how to see that the item left the DOM.
+  - `flip()` at the window's bottom edge was not tested. The maintainer said it is not needed.
+- Primitives reference:
+  - "Types" repeats "Query objects". Link the exported types and keep `ItemLayout`.
+  - "set `layout` and `root` when they change" disagrees with the sample, which sets them
+    on every scroll.
+  - `const current = 0;` in the tracker sample has no purpose. Name it `anchored`.
+- VirtualGrid reference:
+  - `fetchItems` in the first sample is undefined.
+  - The slot prop `total` is passed by `Grid.vue` and documented nowhere. Document it or
+    stop passing it.
+  - `pageProviderDebounceTime` is bolded in the props table, unlike the other rows.
+- Changelog:
+  - "up to version 1.11.0" next to "starts at the fork, with 1.1.x" reads as if 1.1.x were
+    older. Say which upstream version the fork started from.
+  - Three 1.2.0 entries narrate internals or repeat the docs. One fact per entry.
+- Examples page: each demo section is one dense paragraph. Split into what the demo shows,
+  numbered check steps, and a link to the guide. Link axe DevTools and `@axe-core/playwright`.
+  The `Source:` links point at `main` and 404 until this branch is merged.
+- Architecture page: name the key prefix (`<keyPrefix>.<index>`), reword "After an `await`,
+  the ref held the closed instance", and link the events table instead of repeating it.
+- `core/README.md`: "performant", "better performance" and "Minimum styling opinions" are
+  bare adjectives. "3 scoped slots" is wrong for `probe`, which has no props. The caveats
+  paragraph on item size is convoluted. "Scroll Mode" omits the fixed rows column flow needs.
+- No screen reader was run on the ARIA demos. Attributes and keyboard behaviour were checked
+  in a browser only.
+- Not added: a Playwright test that asserts `aria-posinset` after scrolling. The examples
+  page shows a sample test only.
