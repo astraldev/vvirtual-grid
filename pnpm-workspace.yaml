@@ -16,3 +16,6 @@ onlyBuiltDependencies:
   - esbuild
   - sharp
   - vue-demi
+
+# keep the store inside the workspace and out of git
+storeDir: .pnpm-store

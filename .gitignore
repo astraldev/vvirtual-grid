@@ -47,3 +47,6 @@ core/scripts/pipeline.js
 core/scripts/pipeline.js.map
 core/profiles/
 .output/
+
+# pnpm local store
+.pnpm-store/
