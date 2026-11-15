@@ -50,6 +50,7 @@ const wait = (ms = 30) => new Promise((resolve) => setTimeout(resolve, ms));
 type Rect = { x: number; y: number; width: number; height: number };
 type GridHandle = {
   ready: boolean;
+  allItems: unknown[];
   measurement: ResizeMeasurement | undefined;
 };
 
@@ -61,7 +62,11 @@ let host: HTMLElement;
 const pageProvider = (page: number, size: number) =>
   Array.from({ length: size }, (_, i) => ({ name: `item ${page * size + i}` }));
 
-async function mountGrid(props: Record<string, unknown> = {}, mark = true) {
+async function mountGrid(
+  props: Record<string, unknown> = {},
+  mark = true,
+  rerender = true,
+) {
   const grid = ref<GridHandle>();
   host = document.createElement("div");
   document.body.appendChild(host);
@@ -98,9 +103,10 @@ async function mountGrid(props: Record<string, unknown> = {}, mark = true) {
   await wait();
   flushResizeObservers();
   await wait();
-  // template refs of async components are bound on the next parent render
-  app._instance!.proxy!.$forceUpdate();
-  await nextTick();
+  if (rerender) {
+    app._instance!.proxy!.$forceUpdate();
+    await nextTick();
+  }
 
   return { grid: grid as Ref<GridHandle>, root: host.firstElementChild! };
 }
@@ -132,6 +138,14 @@ afterEach(() => {
 const rect = (): Rect => ({ x: -1, y: -1, width: -1, height: -1 });
 
 describe("primitives used with a mounted grid", () => {
+  it("exposes its refs without a parent render", async () => {
+    const { grid } = await mountGrid({}, true, false);
+
+    expect(grid.value.ready).toBe(true);
+    expect(grid.value.measurement).toBeDefined();
+    expect(grid.value.allItems.length).toBe(LENGTH);
+  });
+
   it("exposes the measurement the items are positioned with", async () => {
     const { grid } = await mountGrid();
 
@@ -153,15 +167,15 @@ describe("primitives used with a mounted grid", () => {
     const layout = grid.value.measurement!;
     const out = rect();
 
-    getItemRectByIndex(4, layout, out);
+    getItemRectByIndex({ index: 4, layout, out });
     expect(out).toEqual({ x: 110, y: 60, width: 100, height: 50 });
-    expect(getItemElement(root, 4)!.style.transform).toBe(
+    expect(getItemElement({ root, index: 4 })!.style.transform).toBe(
       `translate(${out.x}px, ${out.y}px)`,
     );
 
     // item 900 is far outside of the rendered buffer
-    expect(getItemElement(root, 900)).toBeNull();
-    expect(getItemViewportRect(root, 900, layout, out)).toBe(true);
+    expect(getItemElement({ root, index: 900 })).toBeNull();
+    expect(getItemViewportRect({ root, index: 900, layout, out })).toBe(true);
     expect(out).toEqual({
       x: GRID_ORIGIN.left,
       y: GRID_ORIGIN.top + 18000,
@@ -174,33 +188,39 @@ describe("primitives used with a mounted grid", () => {
     const { grid } = await mountGrid();
     const layout = grid.value.measurement!;
 
-    expect(getItemCellByIndex(900, layout, { row: 0, column: 0 })).toEqual({
+    expect(
+      getItemCellByIndex({ index: 900, layout, out: { row: 0, column: 0 } }),
+    ).toEqual({
       row: 300,
       column: 0,
     });
     expect(
-      getGridDimensions(LENGTH, layout, { rowCount: 0, columnCount: 0 }),
+      getGridDimensions({
+        length: LENGTH,
+        layout,
+        out: { rowCount: 0, columnCount: 0 },
+      }),
     ).toEqual({ rowCount: 334, columnCount: 3 });
   });
 
   it("maps indexes to elements and back", async () => {
     const { root } = await mountGrid();
-    const el = getItemElement(root, 3)!;
+    const el = getItemElement({ root, index: 3 })!;
 
     expect(el.getAttribute("data-index")).toBe("3");
-    expect(getItemIndex(root, el)).toBe(3);
-    expect(getItemIndex(root, el.firstElementChild)).toBe(3);
-    expect(getItemIndex(root, root)).toBe(-1);
-    expect(getItemIndex(root, root.firstElementChild)).toBe(-1); // probe
-    expect(getItemIndex(root, document.body)).toBe(-1);
-    expect(getItemIndex(root, null)).toBe(-1);
-    expect(getItemIndex(root, window)).toBe(-1);
+    expect(getItemIndex({ root, target: el })).toBe(3);
+    expect(getItemIndex({ root, target: el.firstElementChild })).toBe(3);
+    expect(getItemIndex({ root, target: root })).toBe(-1);
+    expect(getItemIndex({ root, target: root.firstElementChild })).toBe(-1); // probe
+    expect(getItemIndex({ root, target: document.body })).toBe(-1);
+    expect(getItemIndex({ root, target: null })).toBe(-1);
+    expect(getItemIndex({ root, target: window })).toBe(-1);
   });
 
   it("finds no element when the slots do not mark them", async () => {
     const { root } = await mountGrid({}, false);
 
-    expect(getItemElement(root, 3)).toBeNull();
+    expect(getItemElement({ root, index: 3 })).toBeNull();
   });
 });
 
@@ -208,14 +228,14 @@ describe("Grid hooks", () => {
   it("reports the elements bound to items through onRender", async () => {
     const onBind = vi.fn();
     const onUnbind = vi.fn();
-    const track = createItemTracker(onBind, onUnbind);
+    const track = createItemTracker({ onBind, onUnbind });
     const { root } = await mountGrid({
       onRender: () => track(host.firstElementChild!),
     });
     const rendered = host.querySelectorAll("[data-index]").length;
 
     expect(rendered).toBeGreaterThan(0);
-    expect(onBind).toHaveBeenCalledWith(0, getItemElement(root, 0));
+    expect(onBind).toHaveBeenCalledWith(0, getItemElement({ root, index: 0 }));
     // every rendered item was reported exactly once
     const indexes = onBind.mock.calls.map(([index]) => index);
     expect(new Set(indexes).size).toBe(indexes.length);
@@ -233,7 +253,10 @@ describe("Grid hooks", () => {
     expect(root.querySelector('[data-index="0"]')).toBeNull();
     expect(onUnbind).toHaveBeenCalledWith(0);
     expect(onUnbind).toHaveBeenCalledTimes(rendered);
-    expect(onBind).toHaveBeenCalledWith(900, getItemElement(root, 900));
+    expect(onBind).toHaveBeenCalledWith(
+      900,
+      getItemElement({ root, index: 900 }),
+    );
   });
 
   it("reports scrolls and layout changes", async () => {
