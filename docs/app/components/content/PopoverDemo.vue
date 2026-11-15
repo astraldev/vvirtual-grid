@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, useTemplateRef } from "vue";
 import { VirtualGrid, createPageProvider } from "vvirtual-grid/vue";
-import { getItemIndex, getItemViewportRect } from "vvirtual-grid/primitives";
+import { createRectQuery, getItemRect } from "vvirtual-grid/primitives";
 
 const length = 10000;
 const items = Array.from({ length }, (_, i) => `Item ${i}`);
@@ -10,27 +10,21 @@ const pageProvider = createPageProvider(items);
 const grid = useTemplateRef<any>("grid");
 const popover = useTemplateRef<HTMLElement>("popover");
 const anchored = ref(-1);
-const rectArgs = {
-  root: null as Element | null,
-  index: -1,
-  layout: undefined as any,
-  out: { x: 0, y: 0, width: 0, height: 0 },
-};
+const query = createRectQuery();
 
 function place() {
   if (anchored.value < 0 || !grid.value || !popover.value) return;
-  rectArgs.root = grid.value.$el;
-  rectArgs.index = anchored.value;
-  rectArgs.layout = grid.value.measurement;
-  if (!rectArgs.layout || !getItemViewportRect(rectArgs as any)) return;
-  const { x, y, height } = rectArgs.out;
-  popover.value.style.translate = `${x}px ${y + height + 4}px`;
+  query.root = grid.value.$el;
+  query.index = anchored.value;
+  query.layout = grid.value.measurement;
+  if (!getItemRect(query)) return;
+  popover.value.style.translate = `${query.rect.left}px ${query.rect.bottom + 4}px`;
 }
 
 function open(event: MouseEvent) {
-  const index = getItemIndex({ root: grid.value.$el, target: event.target });
-  if (index === -1 || !popover.value) return;
-  anchored.value = index;
+  const item = (event.target as Element).closest<HTMLElement>("[data-index]");
+  if (!item || !popover.value) return;
+  anchored.value = Number(item.dataset.index);
   place();
   popover.value.showPopover();
 }
