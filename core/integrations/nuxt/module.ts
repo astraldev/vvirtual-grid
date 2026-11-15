@@ -6,7 +6,7 @@ import {
 } from "@nuxt/kit";
 import type { NuxtModule } from "@nuxt/schema";
 
-const module: NuxtModule = defineNuxtModule({
+const module: NuxtModule = /*#__PURE__*/ defineNuxtModule({
   meta: {
     name: "vvirtual-grid",
     configKey: "vvgrid",
