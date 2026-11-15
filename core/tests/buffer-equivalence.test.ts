@@ -5,7 +5,17 @@ import {
   createVisibleItemsGetter,
   getVisibleItems,
   type InternalItem,
+  type ItemStore,
 } from "../src/pipeline";
+
+// the items as the grid holds them: in pages, here of 7 to cross page edges
+function toStore(items: unknown[], pageSize = 7): ItemStore {
+  const pages = new Map<number, unknown[]>();
+  for (let start = 0; start < items.length; start += pageSize) {
+    pages.set(start / pageSize, items.slice(start, start + pageSize));
+  }
+  return { length: items.length, pageSize, pages };
+}
 
 // The implementation before it was optimised, kept as the reference.
 function referenceAccumulateBuffer(
@@ -56,6 +66,8 @@ function createRandom(seed: number) {
   };
 }
 
+const getItemId = (value: { id: number }) => value.id;
+
 describe("accumulateBuffer", () => {
   it("behaves like the reference implementation while scrolling, loading and resizing", () => {
     const random = createRandom(42);
@@ -95,7 +107,8 @@ describe("accumulateBuffer", () => {
       };
       const visible = getVisibleItems(meta, layout, allItems);
 
-      buffer = accumulateBuffer(buffer, visible);
+      // the reference compares values in depth, here the id tells the same
+      buffer = accumulateBuffer(buffer, visible, getItemId);
       reference = referenceAccumulateBuffer(reference, visible);
       expect(buffer).toEqual(reference);
     }
@@ -134,7 +147,7 @@ describe("createVisibleItemsGetter", () => {
         bufferedOffset: Math.floor(random() * 320),
         bufferedLength: Math.floor(random() * 40),
       };
-      expect(getCached(meta, layout, allItems)).toEqual(
+      expect(getCached(meta, layout, toStore(allItems))).toEqual(
         getVisibleItems(meta, layout, allItems),
       );
     }
@@ -150,26 +163,30 @@ describe("createVisibleItemsGetter", () => {
     const first = getCached(
       { bufferedOffset: 0, bufferedLength: 20 },
       layout,
-      allItems,
+      toStore(allItems),
     );
     const second = getCached(
       { bufferedOffset: 4, bufferedLength: 20 },
       { ...layout },
-      allItems,
+      toStore(allItems),
     );
     expect(second[0]).toBe(first[4]);
     expect(second[15]).toBe(first[19]);
 
     // the very same array when the window and the items are the same
     expect(
-      getCached({ bufferedOffset: 4, bufferedLength: 20 }, layout, allItems),
+      getCached(
+        { bufferedOffset: 4, bufferedLength: 20 },
+        layout,
+        toStore(allItems),
+      ),
     ).toBe(second);
 
     allItems[5] = { id: "changed" };
     const third = getCached(
       { bufferedOffset: 4, bufferedLength: 20 },
       layout,
-      allItems,
+      toStore(allItems),
     );
     expect(third).not.toBe(second);
     expect(third[0]).toBe(second[0]);
@@ -182,8 +199,8 @@ describe("createVisibleItemsGetter", () => {
     const allItems = Array.from({ length: 100 }, (_, id) => ({ id }));
     const meta = { bufferedOffset: 0, bufferedLength: 20 };
 
-    const first = getCached(meta, measurement(4, 100), allItems);
-    const second = getCached(meta, measurement(5, 100), allItems);
+    const first = getCached(meta, measurement(4, 100), toStore(allItems));
+    const second = getCached(meta, measurement(5, 100), toStore(allItems));
     expect(second[4]).not.toBe(first[4]);
     expect(second[4]!.style!.transform).toBe("translate(400px, 0px)");
   });

@@ -8,10 +8,16 @@
 
 - `vvirtual-grid/primitives` gives the rectangle, row and column of any item, rendered or not, through reusable query objects: `getItemRect`, `getItemCell`, `getIndexByCell` and `createItemTracker`
 - `<VirtualGrid>` exposes `measurement` and emits `render`, `viewport-scroll` and `layout-change`
+- The `getItemId` prop returns a unique identifier of an item. Items with the same identifier are not rendered again when their page is loaded again
+
+### ⚠️ Breaking Changes
+
+- `<VirtualGrid>` no longer exposes `allItems`, and `pipeline()` no longer returns `allItems$`. The grid keeps loaded pages in an internal map
+- The grid no longer compares item values in depth. An item loaded again as a new, equal object is rendered again, unless `getItemId` is set
 
 ### 🩹 Fixes
 
-- Resolved `undefined` for `allItems`, `ready` and `measurement` on a template ref read before the parent rendered again. They are now set on the first render
+- Resolved `undefined` for `ready` and `measurement` on a template ref read before the parent rendered again. They are now set on the first render
 
 ### 🔥 Performance
 
@@ -20,6 +26,7 @@
 ### 📦 Build
 
 - The package is marked side-effect free ([6644e7b](https://github.com/astraldev/vvirtual-grid/commit/6644e7b))
+- Ramda is no longer a dependency. The minified, gzipped entry point is 14.3 KB, down from 17.1 KB
 
 ### 📖 Documentation
 

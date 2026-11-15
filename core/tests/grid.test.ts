@@ -53,7 +53,6 @@ const wait = (ms = 30) => new Promise((resolve) => setTimeout(resolve, ms));
 
 type GridHandle = {
   ready: boolean;
-  allItems: unknown[];
   measurement: ResizeMeasurement | undefined;
 };
 
@@ -144,7 +143,6 @@ describe("primitives used with a mounted grid", () => {
 
     expect(grid.value.ready).toBe(true);
     expect(grid.value.measurement).toBeDefined();
-    expect(grid.value.allItems.length).toBe(LENGTH);
   });
 
   it("exposes the measurement the items are positioned with", async () => {

@@ -16,7 +16,6 @@ import {
   switchMap,
   withLatestFrom,
 } from "rxjs";
-import { apply, complement, equals, identity, isNil, memoizeWith } from "ramda";
 import { getElementScrollParents } from "./utilites";
 
 interface SpaceBehindWindow {
@@ -221,6 +220,33 @@ export function accumulateAllItems(
   return allItems;
 }
 
+/** The loaded pages. Items of pages that were not requested are `undefined`. */
+export interface ItemStore {
+  length: number;
+  pageSize: number;
+  pages: Map<number, unknown[]>;
+}
+
+export function createItemStore(): ItemStore {
+  return { length: 0, pageSize: 1, pages: new Map() };
+}
+
+export function accumulateItemStore(
+  store: ItemStore,
+  [{ pageNumber, items, pageSize }, length]: [ItemsByPage, number],
+): ItemStore {
+  // pages of another size hold other items under the same page number
+  if (store.pageSize !== pageSize) {
+    store.pages.clear();
+    store.pageSize = pageSize;
+  }
+
+  store.length = length;
+  store.pages.set(pageNumber, items);
+
+  return store;
+}
+
 interface ItemOffset {
   x: number;
   y: number;
@@ -306,14 +332,19 @@ export function getVisibleItems(
  * value and position did not change are handed out again instead of being
  * created again, and the very same array is returned when nothing changed.
  */
-export function createVisibleItemsGetter(): typeof getVisibleItems {
+export function createVisibleItemsGetter(): (
+  bufferMeta: BufferMeta,
+  resizeMeasurement: ResizeMeasurement,
+  store: ItemStore,
+) => InternalItem[] {
   let previousItems: InternalItem[] = [];
   let previousStart = 0;
   let previousMeasurement: ResizeMeasurement | undefined;
 
-  return ({ bufferedOffset, bufferedLength }, resizeMeasurement, allItems) => {
-    const start = Math.min(bufferedOffset, allItems.length);
-    const end = Math.min(bufferedOffset + bufferedLength, allItems.length);
+  return ({ bufferedOffset, bufferedLength }, resizeMeasurement, store) => {
+    const { pages, pageSize } = store;
+    const start = Math.min(bufferedOffset, store.length);
+    const end = Math.min(bufferedOffset + bufferedLength, store.length);
     const previousEnd = previousStart + previousItems.length;
     const canReuse =
       previousMeasurement !== undefined &&
@@ -332,8 +363,18 @@ export function createVisibleItemsGetter(): typeof getVisibleItems {
       items = [];
     }
 
+    // the window spans few pages, so look a page up once and not once per item
+    let pageNumber = -1;
+    let page: unknown[] | undefined;
+    let pageStart = 0;
+
     for (let index = start; index < end; index++) {
-      const value = allItems[index];
+      if (index >= pageStart + pageSize || pageNumber === -1) {
+        pageNumber = Math.floor(index / pageSize);
+        pageStart = pageNumber * pageSize;
+        page = pages.get(pageNumber);
+      }
+      const value = page === undefined ? undefined : page[index - pageStart];
       const previous =
         canReuse && index >= previousStart && index < previousEnd
           ? previousItems[index - previousStart]!
@@ -357,7 +398,29 @@ export function createVisibleItemsGetter(): typeof getVisibleItems {
   };
 }
 
-function isSameInternalItem(a: InternalItem, b: InternalItem): boolean {
+/** Returns a unique, stable identifier of an item, e.g. its database id. */
+export type GetItemId = (item: any) => unknown;
+
+function isSameResizeMeasurement(
+  a: ResizeMeasurement,
+  b: ResizeMeasurement,
+): boolean {
+  return (
+    a.flow === b.flow &&
+    a.columns === b.columns &&
+    a.rows === b.rows &&
+    a.colGap === b.colGap &&
+    a.rowGap === b.rowGap &&
+    a.itemWidthWithGap === b.itemWidthWithGap &&
+    a.itemHeightWithGap === b.itemHeightWithGap
+  );
+}
+
+function isSameInternalItem(
+  a: InternalItem,
+  b: InternalItem,
+  getItemId: GetItemId | undefined,
+): boolean {
   if (a === b) return true;
   if (a.index !== b.index) return false;
 
@@ -373,12 +436,26 @@ function isSameInternalItem(a: InternalItem, b: InternalItem): boolean {
     return false;
   }
 
-  return a.value === b.value || equals(a.value, b.value);
+  if (a.value === b.value) return true;
+
+  // a page loaded again gives new objects for the same items
+  return (
+    getItemId !== undefined &&
+    a.value != null &&
+    b.value != null &&
+    getItemId(a.value) === getItemId(b.value)
+  );
 }
 
+/**
+ * Merges the visible items into the rendered buffer. An item is kept as it is
+ * when its position and value are the same. Values are the same when they are
+ * the same object, or when `getItemId` returns the same identifier for both.
+ */
 export function accumulateBuffer(
   buffer: InternalItem[],
   visibleItems: InternalItem[],
+  getItemId?: GetItemId,
 ): InternalItem[] {
   const bufferByIndex = new Map<number, InternalItem>();
   for (let i = 0; i < buffer.length; i++) {
@@ -393,7 +470,7 @@ export function accumulateBuffer(
     const buffered = bufferByIndex.get(item.index);
 
     // Don't downgrade a loaded item to a placeholder — transient undefined emissions
-    // from allItems$ (e.g. when page size changes before the new page has loaded).
+    // from itemStore$ (e.g. when page size changes before the new page has loaded).
     if (
       item.value === undefined &&
       buffered !== undefined &&
@@ -403,7 +480,10 @@ export function accumulateBuffer(
     }
 
     visibleByIndex.set(item.index, item);
-    if (buffered === undefined || !isSameInternalItem(buffered, item)) {
+    if (
+      buffered === undefined ||
+      !isSameInternalItem(buffered, item, getItemId)
+    ) {
       itemsToAdd.push(item);
     }
   }
@@ -416,7 +496,7 @@ export function accumulateBuffer(
     const item = buffer[i]!;
     const visible = visibleByIndex.get(item.index);
 
-    if (visible !== undefined && isSameInternalItem(visible, item)) {
+    if (visible !== undefined && isSameInternalItem(visible, item, getItemId)) {
       if (result !== undefined) result.push(item);
       continue;
     }
@@ -466,6 +546,11 @@ interface PipelineInput {
   scroll$: Observable<Element>;
   respectScrollToOnResize$: Observable<boolean>;
   scrollTo$: Observable<number | undefined>;
+  /**
+   * Tells whether an item loaded again is the same item. Without it, only
+   * the very same object counts as the same item.
+   */
+  getItemId$?: Observable<GetItemId | undefined>;
 }
 
 export type ScrollAction = {
@@ -478,7 +563,6 @@ interface PipelineOutput {
   buffer$: Observable<InternalItem[]>;
   contentSize$: Observable<ContentSize>;
   scrollAction$: Observable<ScrollAction>;
-  allItems$: Observable<unknown[]>;
   ready$: Observable<boolean>;
   /** The latest measurement of the grid, emits when the item size or grid tracks change. */
   measurement$: Observable<ResizeMeasurement>;
@@ -497,6 +581,7 @@ export async function pipeline({
   scroll$,
   respectScrollToOnResize$,
   scrollTo$,
+  getItemId$ = new BehaviorSubject<GetItemId | undefined>(undefined),
 }: PipelineInput): AsyncPipelineOutput {
   // Fetch the first page for SSR before setting up the reactive pipeline
   const [ssrPageProvider, ssrPageSize] = await Promise.all([
@@ -523,7 +608,7 @@ export async function pipeline({
     [rootResize$, itemRect$],
     getResizeMeasurement,
   ).pipe(
-    distinctUntilChanged<ResizeMeasurement>(equals),
+    distinctUntilChanged(isSameResizeMeasurement),
     // measure once for all consumers instead of once per consumer
     shareReplay({ bufferSize: 1, refCount: true }),
   );
@@ -536,7 +621,7 @@ export async function pipeline({
 
   // region: scroll to a given item by index
   const scrollToNotNil$: Observable<number> = scrollTo$.pipe(
-    filter(complement(isNil)),
+    filter((scrollTo): scrollTo is number => scrollTo != null),
   );
   const scrollAction$: Observable<ScrollAction> = respectScrollToOnResize$.pipe(
     switchMap((respectScrollToOnResize) =>
@@ -615,12 +700,18 @@ export async function pipeline({
     bufferMeta$,
     length$,
     pageSize$,
-  ]).pipe(map(apply(getObservableOfVisiblePageNumbers)));
+  ]).pipe(
+    map(([bufferMeta, length, pageSize]) =>
+      getObservableOfVisiblePageNumbers(bufferMeta, length, pageSize),
+    ),
+  );
 
   const debouncedVisiblePageNumbers$: Observable<Observable<number>> =
     pageProviderDebounceTime$.pipe(
       switchMap((time) =>
-        visiblePageNumbers$.pipe(time === 0 ? identity : debounceTime(time)),
+        time === 0
+          ? visiblePageNumbers$
+          : visiblePageNumbers$.pipe(debounceTime(time)),
       ),
     );
 
@@ -631,14 +722,20 @@ export async function pipeline({
       version: number,
     ) => Promise<unknown[]> | unknown[]
   > = combineLatest([pageProvider$, length$.pipe(distinctUntilChanged())]).pipe(
-    map(([f, length]) =>
-      memoizeWith(
-        (pageNumber: number, pageSize: number, version: number) =>
-          `${length}:${pageNumber},${pageSize},${version}`,
-        (pageNumber: number, pageSize: number, _version: number) =>
-          f(pageNumber, pageSize),
-      ),
-    ),
+    // a new provider or length starts a fresh memo
+    map(([f]) => {
+      const pages = new Map<string, Promise<unknown[]> | unknown[]>();
+
+      return (pageNumber: number, pageSize: number, version: number) => {
+        const key = `${pageNumber},${pageSize},${version}`;
+        let page = pages.get(key);
+        if (page === undefined) {
+          page = f(pageNumber, pageSize);
+          pages.set(key, page);
+        }
+        return page;
+      };
+    }),
     shareReplay(1),
   );
 
@@ -665,10 +762,10 @@ export async function pipeline({
 
   const replayLength$: Observable<number> = length$.pipe(shareReplay(1));
 
-  const allItems$: Observable<unknown[]> = memorizedPageProvider$.pipe(
+  const itemStore$: Observable<ItemStore> = memorizedPageProvider$.pipe(
     switchMap(() =>
       combineLatest([itemsByPage$, replayLength$]).pipe(
-        scan(accumulateAllItems, []),
+        scan(accumulateItemStore, createItemStore()),
       ),
     ),
     shareReplay(1),
@@ -681,12 +778,20 @@ export async function pipeline({
   }));
 
   const domItems$: Observable<InternalItem[]> = combineLatest(
-    [bufferMeta$, resizeMeasurement$, allItems$],
+    [bufferMeta$, resizeMeasurement$, itemStore$],
     createVisibleItemsGetter(),
   );
 
-  const buffer$: Observable<InternalItem[]> = domItems$.pipe(
-    scan(accumulateBuffer, []),
+  const buffer$: Observable<InternalItem[]> = getItemId$.pipe(
+    switchMap((getItemId) =>
+      domItems$.pipe(
+        scan<InternalItem[], InternalItem[]>(
+          (buffer, visibleItems) =>
+            accumulateBuffer(buffer, visibleItems, getItemId),
+          [],
+        ),
+      ),
+    ),
     startWith(ssrBuffer),
   );
 
@@ -704,7 +809,6 @@ export async function pipeline({
     buffer$,
     contentSize$,
     scrollAction$,
-    allItems$,
     ready$,
     measurement$: resizeMeasurement$,
     recompute,

@@ -10,5 +10,5 @@ export default defineConfig({
   minify: false,
   dts: false,
   sourcemap: true,
-  external: ["rxjs", "ramda", "@vueuse/core"],
+  external: ["rxjs", "@vueuse/core"],
 });

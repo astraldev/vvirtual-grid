@@ -405,4 +405,47 @@ describe("accumulateBuffer", () => {
     const newBuffer = accumulateBuffer(buffer, visibleItems);
     expect(newBuffer).toEqual(visibleItems);
   });
+
+  const item = (index: number, value: unknown) => ({
+    index,
+    value,
+    style: { gridArea: "1/1", transform: `translate(0px, ${index * 50}px)` },
+  });
+
+  it("replaces an item whose value is another object", () => {
+    const buffer = [item(0, { id: "a" })];
+    const visibleItems = [item(0, { id: "a" })];
+
+    const newBuffer = accumulateBuffer(buffer, visibleItems);
+    expect(newBuffer).not.toBe(buffer);
+    expect(newBuffer[0]).toBe(visibleItems[0]);
+  });
+
+  it("keeps an item that getItemId identifies as the same", () => {
+    const getItemId = (value: { id: string }) => value.id;
+    const buffer = [item(0, { id: "a" }), item(1, { id: "b" })];
+
+    // the same array, so nothing renders again
+    expect(
+      accumulateBuffer(
+        buffer,
+        [item(0, { id: "a" }), item(1, { id: "b" })],
+        getItemId,
+      ),
+    ).toBe(buffer);
+
+    const changed = [item(0, { id: "a" }), item(1, { id: "c" })];
+    const newBuffer = accumulateBuffer(buffer, changed, getItemId);
+    expect(newBuffer[0]).toBe(buffer[0]);
+    expect(newBuffer[1]).toBe(changed[1]);
+  });
+
+  it("replaces a placeholder with the loaded item when getItemId is set", () => {
+    const getItemId = (value: { id: string }) => value.id;
+    const loaded = item(0, { id: "a" });
+
+    expect(accumulateBuffer([item(0, undefined)], [loaded], getItemId)[0]).toBe(
+      loaded,
+    );
+  });
 });
