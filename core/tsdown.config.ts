@@ -15,7 +15,7 @@ export default defineConfig({
   ],
   format: ["esm"],
   minify: false,
-  target: ["es2015"],
+  target: ["es2020"],
   platform: "neutral",
   dts: { vue: true },
   sourcemap: false,

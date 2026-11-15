@@ -26,7 +26,7 @@
 ### 📦 Build
 
 - The package is marked side-effect free ([6644e7b](https://github.com/astraldev/vvirtual-grid/commit/6644e7b))
-- Ramda is no longer a dependency. The minified, gzipped entry point is 14.3 KB, down from 17.1 KB
+- Ramda is no longer a runtime dependency, and the build targets ES2020, where 1.1.6 targeted ES2015. The minified, gzipped entry point is 13.8 KB, down from 17.1 KB
 
 ### 📖 Documentation
 

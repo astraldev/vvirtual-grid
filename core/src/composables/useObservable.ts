@@ -1,5 +1,5 @@
 import { tryOnUnmounted } from "@vueuse/core";
-import { type Observable } from "rxjs";
+import type { Observable } from "rxjs";
 import { type Ref, shallowRef } from "vue";
 
 /**
