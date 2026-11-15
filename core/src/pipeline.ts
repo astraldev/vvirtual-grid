@@ -16,23 +16,7 @@ import {
   switchMap,
   withLatestFrom,
 } from "rxjs";
-import {
-  __,
-  addIndex,
-  apply,
-  complement,
-  concat,
-  difference,
-  equals,
-  identity,
-  isNil,
-  map as ramdaMap,
-  memoizeWith,
-  pipe,
-  slice,
-  without,
-  zip,
-} from "ramda";
+import { apply, complement, equals, identity, isNil, memoizeWith } from "ramda";
 import { getElementScrollParents } from "./utilites";
 
 interface SpaceBehindWindow {
@@ -100,59 +84,85 @@ interface BufferMeta {
   bufferedLength: number;
 }
 
+/** Uncurried `getBufferMeta`, so the scroll path does not create a closure per event. */
+export function computeBufferMeta(
+  { width: widthBehindWindow, height: heightBehindWindow }: SpaceBehindWindow,
+  {
+    colGap,
+    rowGap,
+    flow,
+    columns,
+    rows,
+    itemHeightWithGap,
+    itemWidthWithGap,
+  }: ResizeMeasurement,
+  windowInnerWidth: number,
+  windowInnerHeight: number,
+): BufferMeta {
+  let crosswiseLines;
+  let gap;
+  let itemSizeWithGap;
+  let windowInnerSize;
+  let spaceBehindWindow;
+  if (flow === "row") {
+    crosswiseLines = columns;
+    gap = rowGap;
+    itemSizeWithGap = itemHeightWithGap;
+    windowInnerSize = windowInnerHeight;
+    spaceBehindWindow = heightBehindWindow;
+  } else {
+    crosswiseLines = rows;
+    gap = colGap;
+    itemSizeWithGap = itemWidthWithGap;
+    windowInnerSize = windowInnerWidth;
+    spaceBehindWindow = widthBehindWindow;
+  }
+
+  const linesInView =
+    itemSizeWithGap && Math.ceil((windowInnerSize + gap) / itemSizeWithGap) + 1;
+  const length = linesInView * crosswiseLines;
+
+  const linesBeforeView =
+    itemSizeWithGap && Math.floor((spaceBehindWindow + gap) / itemSizeWithGap);
+  const offset = linesBeforeView * crosswiseLines;
+  const bufferedOffset = Math.max(offset - Math.floor(length / 2), 0);
+  const bufferedLength = length * 2;
+
+  return {
+    bufferedOffset,
+    bufferedLength,
+  };
+}
+
 export const getBufferMeta =
   (
     windowInnerWidth: number = window.innerWidth,
     windowInnerHeight: number = window.innerHeight,
   ) =>
   (
-    { width: widthBehindWindow, height: heightBehindWindow }: SpaceBehindWindow,
-    {
-      colGap,
-      rowGap,
-      flow,
-      columns,
-      rows,
-      itemHeightWithGap,
-      itemWidthWithGap,
-    }: ResizeMeasurement,
-  ): BufferMeta => {
-    let crosswiseLines;
-    let gap;
-    let itemSizeWithGap;
-    let windowInnerSize;
-    let spaceBehindWindow;
-    if (flow === "row") {
-      crosswiseLines = columns;
-      gap = rowGap;
-      itemSizeWithGap = itemHeightWithGap;
-      windowInnerSize = windowInnerHeight;
-      spaceBehindWindow = heightBehindWindow;
-    } else {
-      crosswiseLines = rows;
-      gap = colGap;
-      itemSizeWithGap = itemWidthWithGap;
-      windowInnerSize = windowInnerWidth;
-      spaceBehindWindow = widthBehindWindow;
-    }
+    spaceBehindWindow: SpaceBehindWindow,
+    resizeMeasurement: ResizeMeasurement,
+  ): BufferMeta =>
+    computeBufferMeta(
+      spaceBehindWindow,
+      resizeMeasurement,
+      windowInnerWidth,
+      windowInnerHeight,
+    );
 
-    const linesInView =
-      itemSizeWithGap &&
-      Math.ceil((windowInnerSize + gap) / itemSizeWithGap) + 1;
-    const length = linesInView * crosswiseLines;
+function isSameSpaceBehindWindow(
+  a: SpaceBehindWindow,
+  b: SpaceBehindWindow,
+): boolean {
+  return a.width === b.width && a.height === b.height;
+}
 
-    const linesBeforeView =
-      itemSizeWithGap &&
-      Math.floor((spaceBehindWindow + gap) / itemSizeWithGap);
-    const offset = linesBeforeView * crosswiseLines;
-    const bufferedOffset = Math.max(offset - Math.floor(length / 2), 0);
-    const bufferedLength = length * 2;
-
-    return {
-      bufferedOffset,
-      bufferedLength,
-    };
-  };
+function isSameBufferMeta(a: BufferMeta, b: BufferMeta): boolean {
+  return (
+    a.bufferedOffset === b.bufferedOffset &&
+    a.bufferedLength === b.bufferedLength
+  );
+}
 
 export function getObservableOfVisiblePageNumbers(
   { bufferedOffset, bufferedLength }: BufferMeta,
@@ -245,60 +255,183 @@ export interface InternalItem<T = unknown> {
   style?: { transform: string; gridArea: string };
 }
 
+function createInternalItem(
+  index: number,
+  value: unknown,
+  resizeMeasurement: ResizeMeasurement,
+): InternalItem {
+  let x;
+  let y;
+  if (resizeMeasurement.flow === "row") {
+    x =
+      (index % resizeMeasurement.columns) * resizeMeasurement.itemWidthWithGap;
+    y =
+      Math.floor(index / resizeMeasurement.columns) *
+      resizeMeasurement.itemHeightWithGap;
+  } else {
+    x =
+      Math.floor(index / resizeMeasurement.rows) *
+      resizeMeasurement.itemWidthWithGap;
+    y = (index % resizeMeasurement.rows) * resizeMeasurement.itemHeightWithGap;
+  }
+
+  return {
+    index,
+    value,
+    style: {
+      gridArea: "1/1",
+      transform: `translate(${x}px, ${y}px)`,
+    },
+  };
+}
+
 export function getVisibleItems(
   { bufferedOffset, bufferedLength }: BufferMeta,
   resizeMeasurement: ResizeMeasurement,
   allItems: unknown[],
 ): InternalItem[] {
-  return pipe<unknown[][], unknown[], InternalItem[]>(
-    slice(bufferedOffset, bufferedOffset + bufferedLength),
-    addIndex(ramdaMap)((value: unknown, localIndex: number) => {
-      const index = bufferedOffset + localIndex;
-      const { x, y } = getItemOffsetByIndex(index, resizeMeasurement);
+  const start = Math.min(bufferedOffset, allItems.length);
+  const end = Math.min(bufferedOffset + bufferedLength, allItems.length);
+  const items: InternalItem[] = [];
 
-      return {
-        index,
-        value,
-        style: {
-          gridArea: "1/1",
-          transform: `translate(${x}px, ${y}px)`,
-        },
-      };
-    }) as (a: unknown[]) => InternalItem[],
-  )(allItems);
+  for (let index = start; index < end; index++) {
+    items.push(createInternalItem(index, allItems[index], resizeMeasurement));
+  }
+
+  return items;
+}
+
+/**
+ * Creates a `getVisibleItems` that remembers its last result. Items whose
+ * value and position did not change are handed out again instead of being
+ * created again, and the very same array is returned when nothing changed.
+ */
+export function createVisibleItemsGetter(): typeof getVisibleItems {
+  let previousItems: InternalItem[] = [];
+  let previousStart = 0;
+  let previousMeasurement: ResizeMeasurement | undefined;
+
+  return ({ bufferedOffset, bufferedLength }, resizeMeasurement, allItems) => {
+    const start = Math.min(bufferedOffset, allItems.length);
+    const end = Math.min(bufferedOffset + bufferedLength, allItems.length);
+    const previousEnd = previousStart + previousItems.length;
+    const canReuse =
+      previousMeasurement !== undefined &&
+      (previousMeasurement === resizeMeasurement ||
+        (previousMeasurement.flow === resizeMeasurement.flow &&
+          previousMeasurement.columns === resizeMeasurement.columns &&
+          previousMeasurement.rows === resizeMeasurement.rows &&
+          previousMeasurement.itemWidthWithGap ===
+            resizeMeasurement.itemWidthWithGap &&
+          previousMeasurement.itemHeightWithGap ===
+            resizeMeasurement.itemHeightWithGap));
+
+    let items: InternalItem[] | undefined;
+    // stays undefined for as long as the result equals the previous one
+    if (!canReuse || start !== previousStart || end !== previousEnd) {
+      items = [];
+    }
+
+    for (let index = start; index < end; index++) {
+      const value = allItems[index];
+      const previous =
+        canReuse && index >= previousStart && index < previousEnd
+          ? previousItems[index - previousStart]!
+          : undefined;
+
+      if (previous !== undefined && previous.value === value) {
+        if (items !== undefined) items.push(previous);
+        continue;
+      }
+
+      if (items === undefined) items = previousItems.slice(0, index - start);
+      items.push(createInternalItem(index, value, resizeMeasurement));
+    }
+
+    previousMeasurement = resizeMeasurement;
+    if (items === undefined) return previousItems;
+
+    previousItems = items;
+    previousStart = start;
+    return items;
+  };
+}
+
+function isSameInternalItem(a: InternalItem, b: InternalItem): boolean {
+  if (a === b) return true;
+  if (a.index !== b.index) return false;
+
+  const styleA = a.style;
+  const styleB = b.style;
+  if (
+    styleA !== styleB &&
+    (styleA === undefined ||
+      styleB === undefined ||
+      styleA.transform !== styleB.transform ||
+      styleA.gridArea !== styleB.gridArea)
+  ) {
+    return false;
+  }
+
+  return a.value === b.value || equals(a.value, b.value);
 }
 
 export function accumulateBuffer(
   buffer: InternalItem[],
   visibleItems: InternalItem[],
 ): InternalItem[] {
-  const bufferByIndex = new Map(buffer.map((item) => [item.index, item]));
+  const bufferByIndex = new Map<number, InternalItem>();
+  for (let i = 0; i < buffer.length; i++) {
+    bufferByIndex.set(buffer[i]!.index, buffer[i]!);
+  }
 
-  // Don't downgrade a loaded item to a placeholder — transient undefined emissions
-  // from allItems$ (e.g. when page size changes before the new page has loaded).
-  const effectiveVisible = visibleItems.map((item) => {
-    if (item.value === undefined) {
-      const buffered = bufferByIndex.get(item.index);
-      if (buffered?.value !== undefined) return buffered;
+  const visibleByIndex = new Map<number, InternalItem>();
+  // visible items that are not in the buffer yet, or differ from the buffered one
+  const itemsToAdd: InternalItem[] = [];
+  for (let i = 0; i < visibleItems.length; i++) {
+    let item = visibleItems[i]!;
+    const buffered = bufferByIndex.get(item.index);
+
+    // Don't downgrade a loaded item to a placeholder — transient undefined emissions
+    // from allItems$ (e.g. when page size changes before the new page has loaded).
+    if (
+      item.value === undefined &&
+      buffered !== undefined &&
+      buffered.value !== undefined
+    ) {
+      item = buffered;
     }
-    return item;
-  });
 
-  const itemsToAdd = difference(effectiveVisible, buffer);
-  const itemsFreeToUse = difference(buffer, effectiveVisible);
+    visibleByIndex.set(item.index, item);
+    if (buffered === undefined || !isSameInternalItem(buffered, item)) {
+      itemsToAdd.push(item);
+    }
+  }
 
-  const replaceMap = new Map(zip(itemsFreeToUse, itemsToAdd));
-  const itemsToBeReplaced = [...replaceMap.keys()];
-  const itemsToReplaceWith = [...replaceMap.values()];
+  // Buffered items that are no longer visible are free to use: they are
+  // replaced in place by the items to add, and deleted when none is left.
+  let result: InternalItem[] | undefined;
+  let added = 0;
+  for (let i = 0; i < buffer.length; i++) {
+    const item = buffer[i]!;
+    const visible = visibleByIndex.get(item.index);
 
-  const itemsToDelete = difference(itemsFreeToUse, itemsToBeReplaced);
-  const itemsToAppend = difference(itemsToAdd, itemsToReplaceWith);
+    if (visible !== undefined && isSameInternalItem(visible, item)) {
+      if (result !== undefined) result.push(item);
+      continue;
+    }
 
-  return pipe(
-    without(itemsToDelete),
-    ramdaMap((item) => replaceMap.get(item) ?? item),
-    concat(__, itemsToAppend),
-  )(buffer);
+    if (result === undefined) result = buffer.slice(0, i);
+    if (added < itemsToAdd.length) result.push(itemsToAdd[added++]!);
+  }
+
+  // nothing changed, keep the same array so that nothing renders again
+  if (result === undefined && added === itemsToAdd.length) return buffer;
+
+  if (result === undefined) result = buffer.slice();
+  for (; added < itemsToAdd.length; added++) result.push(itemsToAdd[added]!);
+
+  return result;
 }
 
 interface ContentSize {
@@ -381,12 +514,19 @@ export async function pipeline({
   const spaceBehindWindow$: Observable<SpaceBehindWindow> = merge(
     rootResize$,
     scroll$,
-  ).pipe(map(computeSpaceBehindWindowOf), distinctUntilChanged());
+  ).pipe(
+    map(computeSpaceBehindWindowOf),
+    distinctUntilChanged(isSameSpaceBehindWindow),
+  );
 
   const resizeMeasurement$: Observable<ResizeMeasurement> = combineLatest(
     [rootResize$, itemRect$],
     getResizeMeasurement,
-  ).pipe(distinctUntilChanged<ResizeMeasurement>(equals));
+  ).pipe(
+    distinctUntilChanged<ResizeMeasurement>(equals),
+    // measure once for all consumers instead of once per consumer
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
 
   const contentSize$: Observable<ContentSize> = combineLatest(
     [resizeMeasurement$, length$],
@@ -465,9 +605,9 @@ export async function pipeline({
     resizeMeasurement$,
   ]).pipe(
     map(([space, resize]) =>
-      getBufferMeta(window.innerWidth, window.innerHeight)(space, resize),
+      computeBufferMeta(space, resize, window.innerWidth, window.innerHeight),
     ),
-    distinctUntilChanged<BufferMeta>(equals),
+    distinctUntilChanged(isSameBufferMeta),
     shareReplay(1),
   );
 
@@ -542,7 +682,7 @@ export async function pipeline({
 
   const domItems$: Observable<InternalItem[]> = combineLatest(
     [bufferMeta$, resizeMeasurement$, allItems$],
-    getVisibleItems,
+    createVisibleItemsGetter(),
   );
 
   const buffer$: Observable<InternalItem[]> = domItems$.pipe(
