@@ -3,14 +3,18 @@ import { createApp, h, nextTick, ref, Suspense, type App, type Ref } from "vue";
 import Grid from "../src/Grid.vue";
 import type { ResizeMeasurement } from "../src/pipeline";
 import {
+  createCellQuery,
   createItemTracker,
-  getGridDimensions,
-  getItemCellByIndex,
-  getItemElement,
-  getItemIndex,
-  getItemRectByIndex,
-  getItemViewportRect,
+  createRectQuery,
+  getItemCell,
+  getItemRect,
 } from "../src/primitives";
+
+// the element rendering an index (happy-dom has no :scope, so match children)
+const getItemElement = (root: Element, index: number) =>
+  (Array.from(root.children).find(
+    (el) => el.getAttribute("data-index") === String(index),
+  ) as HTMLElement | undefined) ?? null;
 
 // region: a ResizeObserver that the tests drive by hand
 type Observed = { callback: ResizeObserverCallback; target: Element };
@@ -47,7 +51,6 @@ function flushResizeObservers() {
 const wait = (ms = 30) => new Promise((resolve) => setTimeout(resolve, ms));
 // endregion
 
-type Rect = { x: number; y: number; width: number; height: number };
 type GridHandle = {
   ready: boolean;
   allItems: unknown[];
@@ -135,8 +138,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const rect = (): Rect => ({ x: -1, y: -1, width: -1, height: -1 });
-
 describe("primitives used with a mounted grid", () => {
   it("exposes its refs without a parent render", async () => {
     const { grid } = await mountGrid({}, true, false);
@@ -164,68 +165,59 @@ describe("primitives used with a mounted grid", () => {
 
   it("fills the rect of rendered and virtualized items", async () => {
     const { grid, root } = await mountGrid();
-    const layout = grid.value.measurement!;
-    const out = rect();
+    const query = createRectQuery({ index: 4, layout: grid.value.measurement });
 
-    getItemRectByIndex({ index: 4, layout, out });
-    expect(out).toEqual({ x: 110, y: 60, width: 100, height: 50 });
-    expect(getItemElement({ root, index: 4 })!.style.transform).toBe(
-      `translate(${out.x}px, ${out.y}px)`,
+    expect(getItemRect(query)).toBe(true);
+    expect(query.rect).toMatchObject({ x: 110, y: 60, width: 100, height: 50 });
+    expect(getItemElement(root, 4)!.style.transform).toBe(
+      `translate(${query.rect.x}px, ${query.rect.y}px)`,
     );
 
     // item 900 is far outside of the rendered buffer
-    expect(getItemElement({ root, index: 900 })).toBeNull();
-    expect(getItemViewportRect({ root, index: 900, layout, out })).toBe(true);
-    expect(out).toEqual({
+    expect(getItemElement(root, 900)).toBeNull();
+    query.index = 900;
+    query.root = root;
+    expect(getItemRect(query)).toBe(true);
+    expect(query.rect).toEqual({
       x: GRID_ORIGIN.left,
       y: GRID_ORIGIN.top + 18000,
       width: 100,
       height: 50,
+      left: GRID_ORIGIN.left,
+      top: GRID_ORIGIN.top + 18000,
+      right: GRID_ORIGIN.left + 100,
+      bottom: GRID_ORIGIN.top + 18050,
     });
   });
 
-  it("gives the order of items and the total counts", async () => {
+  it("gives the row and column of any item", async () => {
     const { grid } = await mountGrid();
-    const layout = grid.value.measurement!;
-
-    expect(
-      getItemCellByIndex({ index: 900, layout, out: { row: 0, column: 0 } }),
-    ).toEqual({
-      row: 300,
-      column: 0,
+    const query = createCellQuery({
+      index: 900,
+      layout: grid.value.measurement,
     });
-    expect(
-      getGridDimensions({
-        length: LENGTH,
-        layout,
-        out: { rowCount: 0, columnCount: 0 },
-      }),
-    ).toEqual({ rowCount: 334, columnCount: 3 });
+
+    expect(getItemCell(query)).toBe(true);
+    expect(query.cell).toEqual({ row: 300, column: 0 });
   });
 
-  it("maps indexes to elements and back", async () => {
+  it("finds item elements by data-index", async () => {
     const { root } = await mountGrid();
-    const el = getItemElement({ root, index: 3 })!;
+    const el = getItemElement(root, 3)!;
 
     expect(el.getAttribute("data-index")).toBe("3");
-    expect(getItemIndex({ root, target: el })).toBe(3);
-    expect(getItemIndex({ root, target: el.firstElementChild })).toBe(3);
-    expect(getItemIndex({ root, target: root })).toBe(-1);
-    expect(getItemIndex({ root, target: root.firstElementChild })).toBe(-1); // probe
-    expect(getItemIndex({ root, target: document.body })).toBe(-1);
-    expect(getItemIndex({ root, target: null })).toBe(-1);
-    expect(getItemIndex({ root, target: window })).toBe(-1);
+    expect(el.firstElementChild!.closest("[data-index]")).toBe(el);
   });
 
   it("finds no element when the slots do not mark them", async () => {
     const { root } = await mountGrid({}, false);
 
-    expect(getItemElement({ root, index: 3 })).toBeNull();
+    expect(getItemElement(root, 3)).toBeNull();
   });
 });
 
 describe("Grid hooks", () => {
-  it("reports the elements bound to items through onRender", async () => {
+  it("reports the elements bound to items on the render event", async () => {
     const onBind = vi.fn();
     const onUnbind = vi.fn();
     const track = createItemTracker({ onBind, onUnbind });
@@ -235,7 +227,7 @@ describe("Grid hooks", () => {
     const rendered = host.querySelectorAll("[data-index]").length;
 
     expect(rendered).toBeGreaterThan(0);
-    expect(onBind).toHaveBeenCalledWith(0, getItemElement({ root, index: 0 }));
+    expect(onBind).toHaveBeenCalledWith(0, getItemElement(root, 0));
     // every rendered item was reported exactly once
     const indexes = onBind.mock.calls.map(([index]) => index);
     expect(new Set(indexes).size).toBe(indexes.length);
@@ -253,10 +245,7 @@ describe("Grid hooks", () => {
     expect(root.querySelector('[data-index="0"]')).toBeNull();
     expect(onUnbind).toHaveBeenCalledWith(0);
     expect(onUnbind).toHaveBeenCalledTimes(rendered);
-    expect(onBind).toHaveBeenCalledWith(
-      900,
-      getItemElement({ root, index: 900 }),
-    );
+    expect(onBind).toHaveBeenCalledWith(900, getItemElement(root, 900));
   });
 
   it("reports scrolls and layout changes", async () => {

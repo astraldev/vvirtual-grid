@@ -2,27 +2,28 @@
 // this module, so bundlers drop whatever you do not use.
 import type { ResizeMeasurement } from "./pipeline";
 
-/** A rectangle in CSS pixels. */
+/**
+ * A rectangle in CSS pixels. It has the fields of `DOMRect`, so it can stand
+ * in for `getBoundingClientRect()`, e.g. in a Floating UI virtual element.
+ */
 export interface ItemRect {
   x: number;
   y: number;
   width: number;
   height: number;
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
 }
 
-/** Zero-based visual cell of an item. */
+/** Zero-based visual row and column of an item. */
 export interface ItemCell {
   row: number;
   column: number;
 }
 
-/** Total number of visual rows and columns of the whole list. */
-export interface GridDimensions {
-  rowCount: number;
-  columnCount: number;
-}
-
-/** The subset of the grid measurement needed to locate an item. */
+/** The part of the grid's exposed `measurement` the primitives read. */
 export type ItemLayout = Pick<
   ResizeMeasurement,
   | "flow"
@@ -34,57 +35,34 @@ export type ItemLayout = Pick<
   | "itemHeightWithGap"
 >;
 
-type Tracks = Pick<ItemLayout, "flow" | "columns" | "rows">;
-
 /**
- * Arguments of the primitives. Each function takes one object, so you can
- * create it once, change `index` (or `target`) and call again without
- * allocating.
+ * Input and output of `getItemRect`. Create it once with `createRectQuery`,
+ * then change `index` and call again. The result is written into `rect`, so
+ * a call creates no object.
  */
-export interface ItemRectArgs<R extends ItemRect = ItemRect> {
+export interface RectQuery {
   /** Zero-based index of the item. Not checked against the list length. */
   index: number;
   /** The grid's exposed `measurement`. */
-  layout: ItemLayout;
-  /** Object the result is written into. */
-  out: R;
+  layout: ItemLayout | undefined;
+  /**
+   * The grid element. When set, `rect` is relative to the viewport, like
+   * `getBoundingClientRect()`. When `null`, it is relative to item 0.
+   */
+  root: Element | null;
+  /** Written by `getItemRect`. */
+  rect: ItemRect;
 }
 
-export interface ItemViewportRectArgs<
-  R extends ItemRect = ItemRect,
-> extends ItemRectArgs<R> {
-  /** The grid element, `gridRef.value.$el`. */
-  root: Element;
-}
-
-export interface ItemCellArgs<C extends ItemCell = ItemCell> {
+/**
+ * Input and output of `getItemCell` and `getIndexByCell`. Create it once with
+ * `createCellQuery`. `getItemCell` reads `index` and writes `cell`.
+ * `getIndexByCell` reads `cell` and returns the index.
+ */
+export interface CellQuery {
   index: number;
-  layout: Tracks;
-  out: C;
-}
-
-export interface IndexByCellArgs {
-  row: number;
-  column: number;
-  layout: Tracks;
-}
-
-export interface GridDimensionsArgs<D extends GridDimensions = GridDimensions> {
-  /** Total number of items, the grid's `length` prop. */
-  length: number;
-  layout: Tracks;
-  out: D;
-}
-
-export interface ItemElementArgs {
-  root: Element;
-  index: number;
-}
-
-export interface ItemIndexArgs {
-  root: Element;
-  /** An element inside an item, such as `event.target`. */
-  target: EventTarget | null;
+  layout: ItemLayout | undefined;
+  cell: ItemCell;
 }
 
 export interface ItemTrackerCallbacks {
@@ -94,96 +72,110 @@ export interface ItemTrackerCallbacks {
   onUnbind?: (index: number) => void;
 }
 
-/**
- * Writes the rectangle of an item into `out`, from its index alone, so it
- * works for items that are not rendered. Coordinates are relative to the
- * top-left corner of the first item (index 0). Does not allocate.
- */
-export function getItemRectByIndex<R extends ItemRect>({
-  index,
-  layout,
-  out,
-}: ItemRectArgs<R>): R {
-  if (layout.flow === "row") {
-    out.x = (index % layout.columns) * layout.itemWidthWithGap;
-    out.y = Math.floor(index / layout.columns) * layout.itemHeightWithGap;
-  } else {
-    out.x = Math.floor(index / layout.rows) * layout.itemWidthWithGap;
-    out.y = (index % layout.rows) * layout.itemHeightWithGap;
-  }
-  out.width = layout.itemWidthWithGap - layout.colGap;
-  out.height = layout.itemHeightWithGap - layout.rowGap;
-
-  return out;
+/** Creates a reusable `RectQuery`. */
+export function createRectQuery(
+  init: Partial<Omit<RectQuery, "rect">> = {},
+): RectQuery {
+  return {
+    index: init.index ?? 0,
+    layout: init.layout,
+    root: init.root ?? null,
+    rect: {
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    },
+  };
 }
 
-/** Writes the zero-based visual row and column of an item into `out`. */
-export function getItemCellByIndex<C extends ItemCell>({
-  index,
-  layout,
-  out,
-}: ItemCellArgs<C>): C {
-  if (layout.flow === "row") {
-    out.row = Math.floor(index / layout.columns);
-    out.column = index % layout.columns;
-  } else {
-    out.row = index % layout.rows;
-    out.column = Math.floor(index / layout.rows);
-  }
-
-  return out;
+/** Creates a reusable `CellQuery`. */
+export function createCellQuery(
+  init: Partial<Omit<CellQuery, "cell">> = {},
+): CellQuery {
+  return {
+    index: init.index ?? 0,
+    layout: init.layout,
+    cell: { row: 0, column: 0 },
+  };
 }
 
 /**
- * The index of the item at a zero-based visual row and column. The result is
- * not checked against the length of the list.
+ * Writes the rectangle of `query.index` into `query.rect`, whether the item is
+ * rendered or not. Without `root` the rectangle is relative to item 0 and no
+ * DOM is read. With `root` it is relative to the viewport, which reads the
+ * layout of one element. Returns `false`, leaving `rect` untouched, when
+ * `layout` is missing or the grid has nothing rendered.
  */
-export function getIndexByCell({
-  row,
-  column,
-  layout,
-}: IndexByCellArgs): number {
-  return layout.flow === "row"
-    ? row * layout.columns + column
-    : column * layout.rows + row;
-}
+export function getItemRect(query: RectQuery): boolean {
+  const { index, layout, root, rect } = query;
+  if (layout === undefined) return false;
 
-/** Writes the total number of visual rows and columns of the list into `out`. */
-export function getGridDimensions<D extends GridDimensions>({
-  length,
-  layout,
-  out,
-}: GridDimensionsArgs<D>): D {
+  let x: number;
+  let y: number;
   if (layout.flow === "row") {
-    out.rowCount = Math.ceil(length / layout.columns);
-    out.columnCount = Math.min(layout.columns, length);
+    x = (index % layout.columns) * layout.itemWidthWithGap;
+    y = Math.floor(index / layout.columns) * layout.itemHeightWithGap;
   } else {
-    out.rowCount = Math.min(layout.rows, length);
-    out.columnCount = Math.ceil(length / layout.rows);
+    x = Math.floor(index / layout.rows) * layout.itemWidthWithGap;
+    y = (index % layout.rows) * layout.itemHeightWithGap;
   }
 
-  return out;
-}
+  if (root !== null) {
+    // the first child always sits, untranslated, in the cell of item 0
+    const first = root.firstElementChild;
+    if (first === null) return false;
+    const origin = first.getBoundingClientRect();
+    x += origin.left;
+    y += origin.top;
+  }
 
-/**
- * Writes the rectangle of an item relative to the viewport into `out`, like
- * `getBoundingClientRect()` would, whether the item is rendered or not.
- * Reads the layout once and returns `false`, leaving `out` untouched, when
- * the grid has nothing rendered.
- */
-export function getItemViewportRect<R extends ItemRect>(
-  args: ItemViewportRectArgs<R>,
-): boolean {
-  // the first child always sits, untranslated, in the cell of the first item
-  const first = args.root.firstElementChild;
-  if (first === null) return false;
-
-  const origin = first.getBoundingClientRect();
-  const out = getItemRectByIndex(args);
-  out.x += origin.left;
-  out.y += origin.top;
+  const width = layout.itemWidthWithGap - layout.colGap;
+  const height = layout.itemHeightWithGap - layout.rowGap;
+  rect.x = rect.left = x;
+  rect.y = rect.top = y;
+  rect.width = width;
+  rect.height = height;
+  rect.right = x + width;
+  rect.bottom = y + height;
 
   return true;
+}
+
+/**
+ * Writes the zero-based row and column of `query.index` into `query.cell`.
+ * Returns `false` when `layout` is missing.
+ */
+export function getItemCell(query: CellQuery): boolean {
+  const { index, layout, cell } = query;
+  if (layout === undefined) return false;
+
+  if (layout.flow === "row") {
+    cell.row = Math.floor(index / layout.columns);
+    cell.column = index % layout.columns;
+  } else {
+    cell.row = index % layout.rows;
+    cell.column = Math.floor(index / layout.rows);
+  }
+
+  return true;
+}
+
+/**
+ * The index of the item at `query.cell`. Returns -1 when `layout` is missing.
+ * The result is not checked against the list length.
+ */
+export function getIndexByCell(query: CellQuery): number {
+  const { layout, cell } = query;
+  if (layout === undefined) return -1;
+
+  return layout.flow === "row"
+    ? cell.row * layout.columns + cell.column
+    : cell.column * layout.rows + cell.row;
 }
 
 function readIndex(element: Element): number {
@@ -195,43 +187,13 @@ function readIndex(element: Element): number {
 }
 
 /**
- * The element currently rendering an item, or `null` when it is virtualized.
- * Only the elements that the slots mark with `data-index` can be found.
- */
-export function getItemElement({
-  root,
-  index,
-}: ItemElementArgs): HTMLElement | null {
-  for (let el = root.firstElementChild; el; el = el.nextElementSibling) {
-    if (readIndex(el) === index) return el as HTMLElement;
-  }
-
-  return null;
-}
-
-/**
- * The index of the item rendered by, or around, an element such as
- * `event.target`. Returns -1 when the element is not part of a marked item.
- */
-export function getItemIndex({ root, target }: ItemIndexArgs): number {
-  let node = target as Element | null;
-  if (node === null || typeof node.getAttribute !== "function") return -1;
-
-  while (node !== null && node.parentElement !== root) {
-    node = node.parentElement;
-  }
-
-  return node === null ? -1 : readIndex(node);
-}
-
-/**
- * Creates a function that reports which marked elements started and stopped
- * rendering an item since it was last called. Call it with the element of the
- * grid from the `onRender` callback. It keeps two maps and swaps them, so
- * calling it does not allocate.
+ * Creates a function that reports which elements marked with `data-index`
+ * started and stopped rendering an item since it was last called. Call it
+ * with the grid element on the grid's `render` event. It keeps two maps and
+ * swaps them, so a call creates no object.
  *
- * `onBind` is also called when another element takes over an index, e.g. when
- * a placeholder is replaced by the loaded item.
+ * `onBind` also fires when another element takes over an index, e.g. when a
+ * loaded item replaces its placeholder.
  */
 export function createItemTracker({
   onBind,

@@ -1,13 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import {
+  createCellQuery,
   createItemTracker,
-  getItemElement,
-  getItemIndex,
-  getItemViewportRect,
-  getGridDimensions,
+  createRectQuery,
   getIndexByCell,
-  getItemCellByIndex,
-  getItemRectByIndex,
+  getItemCell,
+  getItemRect,
   type ItemLayout,
 } from "../src/primitives";
 import { getItemOffsetByIndex } from "../src/pipeline";
@@ -29,159 +27,138 @@ const columnLayout: ItemLayout = {
   rows: 2,
 };
 
-const rect = () => ({ x: 0, y: 0, width: 0, height: 0 });
-const cell = () => ({ row: 0, column: 0 });
-const dimensions = () => ({ rowCount: 0, columnCount: 0 });
+const box = (x: number, y: number, width: number, height: number) => ({
+  x,
+  y,
+  width,
+  height,
+  left: x,
+  top: y,
+  right: x + width,
+  bottom: y + height,
+});
 
-describe("getItemRectByIndex", () => {
-  it("computes the rect of an item in row flow", () => {
-    expect(
-      getItemRectByIndex({ index: 7, layout: rowLayout, out: rect() }),
-    ).toEqual({
-      x: 120,
-      y: 120,
-      width: 100,
-      height: 50,
+describe("createRectQuery / createCellQuery", () => {
+  it("creates zeroed queries with the given fields", () => {
+    expect(createRectQuery({ index: 3 })).toEqual({
+      index: 3,
+      layout: undefined,
+      root: null,
+      rect: box(0, 0, 0, 0),
     });
+    expect(createCellQuery({ layout: rowLayout })).toEqual({
+      index: 0,
+      layout: rowLayout,
+      cell: { row: 0, column: 0 },
+    });
+  });
+});
+
+describe("getItemRect", () => {
+  it("computes the rect of an item in row flow", () => {
+    const query = createRectQuery({ index: 7, layout: rowLayout });
+    expect(getItemRect(query)).toBe(true);
+    expect(query.rect).toEqual(box(120, 120, 100, 50));
   });
 
   it("computes the rect of an item in column flow", () => {
-    expect(
-      getItemRectByIndex({ index: 7, layout: columnLayout, out: rect() }),
-    ).toEqual({
-      x: 360,
-      y: 60,
-      width: 100,
-      height: 50,
-    });
+    const query = createRectQuery({ index: 7, layout: columnLayout });
+    getItemRect(query);
+    expect(query.rect).toEqual(box(360, 60, 100, 50));
   });
 
   it("agrees with the offset used to render the items", () => {
+    const query = createRectQuery();
     for (const layout of [rowLayout, columnLayout]) {
+      query.layout = layout;
       for (const index of [0, 1, 5, 1000, 123457]) {
-        const { x, y } = getItemRectByIndex({ index, layout, out: rect() });
-        expect({ x, y }).toEqual(getItemOffsetByIndex(index, layout));
+        query.index = index;
+        getItemRect(query);
+        expect({ x: query.rect.x, y: query.rect.y }).toEqual(
+          getItemOffsetByIndex(index, layout),
+        );
       }
     }
   });
 
-  it("fills and returns the given object", () => {
-    const out = rect();
-    expect(getItemRectByIndex({ index: 4, layout: rowLayout, out })).toBe(out);
-    expect(out).toEqual({ x: 120, y: 60, width: 100, height: 50 });
+  it("writes into the same rect object on every call", () => {
+    const query = createRectQuery({ layout: rowLayout });
+    const rect = query.rect;
+    query.index = 4;
+    getItemRect(query);
+    expect(query.rect).toBe(rect);
+    expect(rect).toEqual(box(120, 60, 100, 50));
+  });
+
+  it("returns false without a layout", () => {
+    const query = createRectQuery({ index: 4 });
+    expect(getItemRect(query)).toBe(false);
+    expect(query.rect).toEqual(box(0, 0, 0, 0));
+  });
+
+  it("adds the position of the grid's first child when root is set", () => {
+    const root = document.createElement("div");
+    root.appendChild(document.createElement("div"));
+    root.firstElementChild!.getBoundingClientRect = () =>
+      ({ left: 15, top: -400 }) as DOMRect;
+    const query = createRectQuery({ index: 7, layout: rowLayout, root });
+
+    expect(getItemRect(query)).toBe(true);
+    expect(query.rect).toEqual(box(135, -280, 100, 50));
+  });
+
+  it("returns false when root has nothing rendered", () => {
+    const query = createRectQuery({
+      index: 7,
+      layout: rowLayout,
+      root: document.createElement("div"),
+    });
+    expect(getItemRect(query)).toBe(false);
   });
 });
 
-describe("getItemCellByIndex / getIndexByCell", () => {
+describe("getItemCell / getIndexByCell", () => {
   it("computes the cell in row flow", () => {
-    expect(
-      getItemCellByIndex({ index: 7, layout: rowLayout, out: cell() }),
-    ).toEqual({
-      row: 2,
-      column: 1,
-    });
+    const query = createCellQuery({ index: 7, layout: rowLayout });
+    expect(getItemCell(query)).toBe(true);
+    expect(query.cell).toEqual({ row: 2, column: 1 });
   });
 
   it("computes the cell in column flow", () => {
-    expect(
-      getItemCellByIndex({ index: 7, layout: columnLayout, out: cell() }),
-    ).toEqual({
-      row: 1,
-      column: 3,
-    });
+    const query = createCellQuery({ index: 7, layout: columnLayout });
+    getItemCell(query);
+    expect(query.cell).toEqual({ row: 1, column: 3 });
   });
 
   it("round-trips between index and cell", () => {
+    const query = createCellQuery();
     for (const layout of [rowLayout, columnLayout]) {
+      query.layout = layout;
       for (const index of [0, 1, 2, 3, 7, 999]) {
-        const { row, column } = getItemCellByIndex({
-          index,
-          layout,
-          out: cell(),
-        });
-        expect(getIndexByCell({ row, column, layout })).toBe(index);
+        query.index = index;
+        getItemCell(query);
+        expect(getIndexByCell(query)).toBe(index);
       }
     }
   });
-});
 
-describe("getGridDimensions", () => {
-  it("counts rows and columns in row flow", () => {
-    expect(
-      getGridDimensions({ length: 10, layout: rowLayout, out: dimensions() }),
-    ).toEqual({
-      rowCount: 4,
-      columnCount: 3,
-    });
-    expect(
-      getGridDimensions({ length: 2, layout: rowLayout, out: dimensions() }),
-    ).toEqual({
-      rowCount: 1,
-      columnCount: 2,
-    });
-  });
-
-  it("counts rows and columns in column flow", () => {
-    expect(
-      getGridDimensions({ length: 7, layout: columnLayout, out: dimensions() }),
-    ).toEqual({
-      rowCount: 2,
-      columnCount: 4,
-    });
+  it("handles a missing layout", () => {
+    const query = createCellQuery({ index: 7 });
+    expect(getItemCell(query)).toBe(false);
+    expect(getIndexByCell(query)).toBe(-1);
   });
 });
 
-describe("DOM primitives", () => {
+describe("createItemTracker", () => {
   function createRoot(indexes: (number | null)[]): HTMLElement {
     const root = document.createElement("div");
     for (const index of indexes) {
       const el = document.createElement("div");
       if (index !== null) el.setAttribute("data-index", String(index));
-      el.appendChild(document.createElement("span"));
       root.appendChild(el);
     }
     return root;
   }
-
-  it("adds the position of the first child to get a viewport rect", () => {
-    const root = createRoot([null, 0, 1]);
-    root.firstElementChild!.getBoundingClientRect = () =>
-      ({ left: 15, top: -400 }) as DOMRect;
-    const out = rect();
-
-    expect(
-      getItemViewportRect({ root, index: 7, layout: rowLayout, out }),
-    ).toBe(true);
-    expect(out).toEqual({ x: 135, y: -280, width: 100, height: 50 });
-  });
-
-  it("leaves out untouched when the grid is empty", () => {
-    const out = rect();
-
-    expect(
-      getItemViewportRect({
-        root: createRoot([]),
-        index: 7,
-        layout: rowLayout,
-        out,
-      }),
-    ).toBe(false);
-    expect(out).toEqual(rect());
-  });
-
-  it("maps between indexes and marked elements", () => {
-    const root = createRoot([null, 12, 10, 11]);
-
-    expect(getItemElement({ root, index: 10 })).toBe(root.children[2]);
-    expect(getItemElement({ root, index: 0 })).toBeNull();
-    expect(
-      getItemIndex({ root, target: root.children[3]!.firstElementChild }),
-    ).toBe(11);
-    expect(getItemIndex({ root, target: root.children[0]! })).toBe(-1);
-    expect(getItemIndex({ root, target: document.createElement("div") })).toBe(
-      -1,
-    );
-  });
 
   it("tracks the elements bound to indexes", () => {
     const onBind = vi.fn();

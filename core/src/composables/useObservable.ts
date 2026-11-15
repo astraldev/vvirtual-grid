@@ -10,10 +10,9 @@ export function useObservable<H>(
   observable: Observable<H>,
   target: Ref<H | undefined> = shallowRef<H>(),
 ): Readonly<Ref<H>> {
-  const valueRef = target;
-  const subscription = observable.subscribe((val) => (valueRef.value = val));
+  const subscription = observable.subscribe((val) => (target.value = val));
 
   tryOnUnmounted(() => subscription.unsubscribe());
 
-  return valueRef as Readonly<Ref<H>>;
+  return target as Readonly<Ref<H>>;
 }

@@ -131,30 +131,16 @@ const props = defineProps({
     required: false,
     default: undefined,
   },
-
-  /**
-   * Called after the set of rendered items changed and the DOM was updated.
-   */
-  onRender: {
-    type: Function as PropType<() => void>,
-    required: false,
-    default: undefined,
-  },
-
-  /** Called when a scroll parent of the grid scrolls, i.e. the items moved in the viewport. */
-  onViewportScroll: {
-    type: Function as PropType<() => void>,
-    required: false,
-    default: undefined,
-  },
-
-  /** Called after the grid is measured again (item size, gaps, tracks or flow changed). */
-  onLayoutChange: {
-    type: Function as PropType<() => void>,
-    required: false,
-    default: undefined,
-  },
 });
+
+const emit = defineEmits<{
+  /** The set of rendered items changed and the DOM was patched. */
+  render: [];
+  /** A scroll parent of the grid scrolled, so every item moved on screen. */
+  viewportScroll: [];
+  /** The grid was measured again: item size, gap, tracks or flow changed. */
+  layoutChange: [];
+}>();
 
 const rootRef = useTemplateRef<HTMLElement | VueInstance>("root");
 const probeRef = useTemplateRef<HTMLElement | VueInstance>("probe");
@@ -245,25 +231,25 @@ watch(
 
 useObservable(allItems$, allItems);
 
-// region: low-level hooks, they do nothing unless a callback is given
+// region: low-level events
 useObservable(measurement$, measurement);
 
 const scrollSubscription = scroll$.subscribe(() => {
-  if (props.onViewportScroll) props.onViewportScroll();
+  emit("viewportScroll");
 });
 tryOnUnmounted(() => scrollSubscription.unsubscribe());
 
 watch(
   measurement,
   () => {
-    if (props.onLayoutChange) props.onLayoutChange();
+    emit("layoutChange");
   },
   { flush: "post" },
 );
 watch(
   buffer,
   () => {
-    if (props.onRender) props.onRender();
+    emit("render");
   },
   { flush: "post" },
 );
