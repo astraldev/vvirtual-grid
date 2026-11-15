@@ -17,6 +17,19 @@ items (e.g. 1000+ items) as a grid in a performant way.
 - Support both vertical and horizontal scroll.
 - Loaded items are cached for better performance.
 
+## Performance
+
+Version 1.2.0 against 1.1.6, on a list of 1,000,000 items, on the same machine.
+
+| Benchmark                         | 1.1.6    | 1.2.0    | Time saved | Speed-up     |
+| --------------------------------- | -------- | -------- | ---------- | ------------ |
+| 20 scroll events, one row each    | 1,530 ms | 0.40 ms  | 99.97%     | 3,800 times  |
+| 20 scroll events, 2px each        | 0.017 ms | 0.004 ms | 76%        | 4 times      |
+| Starting the grid                 | 44 ms    | 0.82 ms  | 98%        | 54 times     |
+
+The [benchmarks page](https://vvirtual-grid.com/reference/benchmarks) has the full
+tables and how to run them.
+
 ## Install
 
 ```shell
