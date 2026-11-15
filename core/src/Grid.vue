@@ -33,7 +33,7 @@
 </template>
 
 <script lang="ts" setup generic="T extends object">
-import { type VueInstance, tryOnUnmounted, unrefElement } from "@vueuse/core";
+import { type VueInstance, tryOnUnmounted } from "@vueuse/core";
 import { once } from "ramda";
 import {
   type PropType,
@@ -52,14 +52,6 @@ import {
   type ScrollAction,
 } from "./pipeline";
 import { fromProp, fromResizeObserver } from "./utilites";
-import {
-  type GridDimensions,
-  type ItemCell,
-  type ItemRect,
-  getGridDimensions as computeGridDimensions,
-  getItemCellByIndex,
-  getItemRectByIndex,
-} from "./position";
 import { fromScrollParent } from "./composables/useFromScrollParent";
 import { useObservable } from "./composables/useObservable";
 import type { Observable } from "rxjs";
@@ -140,18 +132,10 @@ const props = defineProps({
   },
 
   /**
-   * Called after an element marked with `data-index` starts rendering an item.
-   * Not called at all, and costs nothing, when no element is marked.
+   * Called after the set of rendered items changed and the DOM was updated.
    */
-  onItemBind: {
-    type: Function as PropType<(index: number, element: HTMLElement) => void>,
-    required: false,
-    default: undefined,
-  },
-
-  /** Called after the item of an index stops being rendered by any marked element. */
-  onItemUnbind: {
-    type: Function as PropType<(index: number) => void>,
+  onRender: {
+    type: Function as PropType<() => void>,
     required: false,
     default: undefined,
   },
@@ -252,99 +236,9 @@ watch(
 
 const allItems = useObservable(allItems$);
 
-// region: low-level primitives
+// region: low-level hooks, they do nothing unless a callback is given
 const measurement = useObservable(measurement$);
 
-function isValidIndex(index: number): boolean {
-  return Number.isInteger(index) && index >= 0 && index < props.length;
-}
-
-/**
- * Writes the rectangle of an item into `out`, whether it is rendered or not.
- * Returns `false`, leaving `out` untouched, until the grid is measured or
- * when the index is out of range.
- *
- * - `"grid"` (default): relative to the first item. Pure arithmetic.
- * - `"viewport"`: like `getBoundingClientRect()`. Reads the layout once.
- */
-function getItemRect(
-  index: number,
-  out: ItemRect,
-  relativeTo: "grid" | "viewport" = "grid",
-): boolean {
-  const currentMeasurement = measurement.value;
-  if (!currentMeasurement || !ready.value || !isValidIndex(index)) return false;
-
-  if (relativeTo === "viewport") {
-    // the probe sits in the first cell without being translated
-    const probeEl = unrefElement(probeRef);
-    if (!probeEl) return false;
-
-    const origin = probeEl.getBoundingClientRect();
-    getItemRectByIndex(index, currentMeasurement, out);
-    out.x += origin.left;
-    out.y += origin.top;
-  } else {
-    getItemRectByIndex(index, currentMeasurement, out);
-  }
-
-  return true;
-}
-
-/** Writes the zero-based visual row and column of an item into `out`. */
-function getItemCell(index: number, out: ItemCell): boolean {
-  const currentMeasurement = measurement.value;
-  if (!currentMeasurement || !isValidIndex(index)) return false;
-
-  getItemCellByIndex(index, currentMeasurement, out);
-  return true;
-}
-
-/** Writes the total number of visual rows and columns into `out`. */
-function getGridDimensions(out: GridDimensions): boolean {
-  const currentMeasurement = measurement.value;
-  if (!currentMeasurement) return false;
-
-  computeGridDimensions(props.length, currentMeasurement, out);
-  return true;
-}
-
-function readIndex(element: Element): number {
-  const value = element.getAttribute("data-index");
-  if (value === null || value === "") return -1;
-
-  const index = Number(value);
-  return Number.isInteger(index) ? index : -1;
-}
-
-/**
- * The element currently rendering an item, or `null` when it is virtualized.
- * Only elements marked with `data-index` by the slots can be found.
- */
-function getItemElement(index: number): HTMLElement | null {
-  const rootEl = unrefElement(rootRef);
-  if (!rootEl) return null;
-
-  for (let el = rootEl.firstElementChild; el; el = el.nextElementSibling) {
-    if (readIndex(el) === index) return el as HTMLElement;
-  }
-
-  return null;
-}
-
-/** The index of the item rendered by, or around, an element. -1 if none. */
-function getItemIndex(target: EventTarget | null): number {
-  const rootEl = unrefElement(rootRef);
-  if (!rootEl || !(target instanceof Element)) return -1;
-
-  let node: Element | null = target;
-  while (node && node.parentElement !== rootEl) node = node.parentElement;
-
-  return node ? readIndex(node) : -1;
-}
-// endregion
-
-// region: low-level hooks, they do nothing unless a callback is given
 const scrollSubscription = scroll$.subscribe(() => {
   if (props.onViewportScroll) props.onViewportScroll();
 });
@@ -357,56 +251,14 @@ watch(
   },
   { flush: "post" },
 );
-
-// two maps swapped on every pass, so tracking the bound elements never allocates
-let boundElements = new Map<number, Element>();
-let nextBoundElements = new Map<number, Element>();
-
-function reportUnbound(_element: Element, index: number) {
-  if (!nextBoundElements.has(index) && props.onItemUnbind) {
-    props.onItemUnbind(index);
-  }
-}
-
 watch(
   buffer,
   () => {
-    if (!props.onItemBind && !props.onItemUnbind) return;
-
-    const rootEl = unrefElement(rootRef);
-    if (!rootEl) return;
-
-    nextBoundElements.clear();
-    for (let el = rootEl.firstElementChild; el; el = el.nextElementSibling) {
-      const index = readIndex(el);
-      if (index === -1) continue;
-
-      nextBoundElements.set(index, el);
-      // also reported when another element takes over the same index,
-      // e.g. when a placeholder is replaced by the loaded item
-      if (boundElements.get(index) !== el && props.onItemBind) {
-        props.onItemBind(index, el as HTMLElement);
-      }
-    }
-    boundElements.forEach(reportUnbound);
-
-    const previous = boundElements;
-    boundElements = nextBoundElements;
-    nextBoundElements = previous;
-    nextBoundElements.clear(); // do not keep removed elements alive
+    if (props.onRender) props.onRender();
   },
   { flush: "post" },
 );
 // endregion
 
-defineExpose({
-  allItems,
-  ready,
-  measurement,
-  getItemRect,
-  getItemCell,
-  getGridDimensions,
-  getItemElement,
-  getItemIndex,
-});
+defineExpose({ allItems, ready, measurement });
 </script>

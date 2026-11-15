@@ -1,3 +1,3 @@
 export * from "./pipeline";
-export * from "./position";
+export * from "./primitives";
 export { createPageProvider } from "./composables/createPageProvider";
