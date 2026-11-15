@@ -9,7 +9,7 @@ items (e.g. 1000+ items) as a grid in a performant way.
 
 - Use virtual-scrolling / windowing to render the items, so the number of DOM
   nodes is kept low.
-- Just use CSS grid to style your grid. Minimum styling opinions from the
+- Use CSS grid to style your grid. Minimum styling opinions from the
   library.
 - Support using a paginated API to load the items in the background.
 - Support rendering placeholders for unloaded items.
@@ -83,7 +83,7 @@ export default defineNuxtConfig({
 | `length`                   | The number of items in the list                                                  | `number`                                                 | Required, an integer greater than or equal to 0                  |
 | `pageProvider`             | The callback that returns a page of items as a promise. `pageNumber` starts at 0 | `(pageNumber: number, pageSize: number) => Promise<T[]>` | Required                                                         |
 | `pageSize`                 | The number of items in a page from the item provider (e.g. a backend API)        | `number`                                                 | Required, an integer greater than or equal to 1                  |
-| `pageProviderDebounceTime` | Debounce window in milliseconds on the calls to `pageProvider`                   | `number`                                                 | Optional, an integer greater than or equal to 0, defaults to `0` |
+| `pageProviderDebounceTime` | **Most important for network providers.** Milliseconds to wait before calling `pageProvider`. Pages skipped meanwhile are never requested | `number`                                                 | Optional, an integer greater than or equal to 0, defaults to `0` |
 | `probeTag`                 | The HTML tag used as probe element                                               | `string`                                                 | Optional, any valid HTML tag, defaults to `div`                  |
 | `respectScrollToOnResize`  | Snap to the position set by `scrollTo` when the grid container is resized        | `boolean`                                                | Optional, defaults to `true`                                     |
 | `scrollBehavior`           | The behavior of `scrollTo`                                                       | `"smooth"` &#124; `"auto"`                               | Optional, defaults to `"smooth"`                                 |
@@ -160,44 +160,62 @@ Example:
 | `ready`       | `Ref<boolean>`                        | Whether the buffer has started calculating with the DOM                                                                               |
 | `measurement` | `Ref<ResizeMeasurement \| undefined>` | The measurement the items are positioned with: `flow`, `columns`, `rows`, `colGap`, `rowGap`, `itemWidthWithGap`, `itemHeightWithGap` |
 
+## Events
+
+The grid emits three events. None of them carries a payload.
+
+| Event             | Emitted                                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------------------- |
+| `render`          | After the set of rendered items changed and the DOM was patched                                |
+| `viewport-scroll` | When a scroll parent of the grid scrolls, so every item moved on screen. Fires on every scroll |
+| `layout-change`   | After the grid measured itself again (item size, gap, tracks or flow changed)                  |
+
+```vue
+<VirtualGrid @render="onRender" @viewport-scroll="onViewportScroll" @layout-change="onLayoutChange" />
+```
+
 ## Low-level Primitives
 
-The grid does not add roles, ARIA attributes, focus handling or overlays. It
-exposes the raw data it already computes, so you can build those yourself.
+The grid does not add ARIA roles, focus handling or overlays. Instead, it gives
+you the positions it already computes, so you can build them yourself. Use the
+primitives to get an item's rectangle, or its row and column, even when the item
+is not rendered.
 
-The primitives are plain functions in `vvirtual-grid/primitives`. The grid does
-not import them, so what you do not use is not in your bundle. Functions that
-take `out` fill your object instead of allocating one.
+The primitives are plain functions in `vvirtual-grid/primitives`. Each one
+reads and writes a query object that you create once and reuse. You set
+`index` (and `layout`, `root`) before each call, and the result is written into
+the object's `rect` or `cell`. `viewport-scroll` fires on every scroll event, and
+a new object per event is garbage the browser must collect while the user
+scrolls. The idea is the same as an output parameter in a C API,
+`get_rect(index, &rect)`.
 
-Every function takes one object. Create it once, change `index` (or
-`target`) and call it again, so a call allocates nothing.
-
-| Function                                                     | Description                                                                                                               |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| `getItemRectByIndex({ index, layout, out }): ItemRect`       | `x`, `y`, `width`, `height` of an item relative to the first item, **rendered or not**. Pure arithmetic.                  |
-| `getItemViewportRect({ root, index, layout, out }): boolean` | The same relative to the viewport, like `getBoundingClientRect()`. Reads the layout once. `false` when the grid is empty. |
-| `getItemCellByIndex({ index, layout, out }): ItemCell`       | Zero-based visual `row` and `column` of an item.                                                                          |
-| `getIndexByCell({ row, column, layout }): number`            | The index at a zero-based visual row and column.                                                                          |
-| `getGridDimensions({ length, layout, out }): GridDimensions` | Total `rowCount` and `columnCount` of the whole list.                                                                     |
-| `getItemElement({ root, index }): HTMLElement \| null`       | The element currently rendering an item, `null` when it is virtualized.                                                   |
-| `getItemIndex({ root, target }): number`                     | The index of the item rendered by (or around) an element, e.g. `event.target`. `-1` when there is none.                   |
-| `createItemTracker({ onBind, onUnbind }): (root) => void`    | Returns a function that reports what started and stopped rendering since its last call. Call it from `onRender`.          |
+| Function                                                  | Description                                                                                                                                 |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createRectQuery({ index?, layout?, root? }): RectQuery`  | Creates the reusable query for `getItemRect`. The result goes into `query.rect`.                                                            |
+| `getItemRect(query): boolean`                             | The item's rectangle, **rendered or not**. With `root: null` it is relative to item 0. With `root` set to the grid element, relative to the viewport, like `getBoundingClientRect()`. `false` when `layout` is `undefined` or nothing is rendered. |
+| `createCellQuery({ index?, layout? }): CellQuery`         | Creates the reusable query for `getItemCell` and `getIndexByCell`. The result goes into `query.cell`.                                      |
+| `getItemCell(query): boolean`                             | Writes the zero-based visual `row` and `column` of `query.index` into `query.cell`. `false` without `layout`.                              |
+| `getIndexByCell(query): number`                           | The index at `query.cell`. `-1` without `layout`.                                                                                           |
+| `createItemTracker({ onBind, onUnbind }): (root) => void` | Returns a function that reports what started and stopped rendering since its last call. Call it with the grid element on `render`.         |
 
 - `root` is the element of the grid (`gridRef.value.$el`).
 - `layout` is the `measurement` exposed by the grid (see
   [Exposed Public Properties](#exposed-public-properties)). It is `undefined`
   until the grid is measured.
-- The functions that deal with elements find them by a `data-index` attribute,
-  so set `:data-index="index"` on the root element of your `default` and
-  `placeholder` slots.
+- `rect` has the fields of a `DOMRect`, so it can be returned from a Floating
+  UI virtual element's `getBoundingClientRect()`.
 
-The grid itself only adds three callback props. They do nothing while unset:
+To find elements, set `:data-index="index"` on the root element of your
+`default` and `placeholder` slots. Then use the DOM:
 
-| Prop               | Called                                                                         |
-| ------------------ | ------------------------------------------------------------------------------ |
-| `onRender`         | After the set of rendered items changed and the DOM was updated                |
-| `onViewportScroll` | When a scroll parent of the grid scrolls, i.e. the items moved in the viewport |
-| `onLayoutChange`   | After the grid is measured again (item size, gaps, tracks or flow changed)     |
+```js
+// the element rendering item 42, or null
+const element = root.querySelector(':scope > [data-index="42"]');
+// the index of the item an event came from, or -1
+const index = Number(event.target.closest("[data-index]")?.dataset.index ?? -1);
+// the number of rows in row flow
+const rowCount = Math.ceil(length / measurement.columns);
+```
 
 ### Example: ARIA attributes and a native popover
 
@@ -205,41 +223,35 @@ Everything below is userland code. The items are a flat list of elements, so
 the `list` / `listitem` roles with `aria-setsize` / `aria-posinset` describe
 them correctly even though most of them are not in the DOM. (`role="grid"`
 needs `row` elements between the grid and its cells, which a flat list does
-not have. `getItemCellByIndex` and `getGridDimensions` give you the numbers for
-`aria-rowindex` / `aria-rowcount` if you render such a structure yourself.)
+not have. `getItemCell` gives you the numbers for `aria-rowindex` if you render
+such a structure yourself.)
 
 ```vue
 <script setup>
 import { ref, useTemplateRef } from "vue";
 import { VirtualGrid } from "vvirtual-grid/vue";
-import { getItemIndex, getItemViewportRect } from "vvirtual-grid/primitives";
+import { createRectQuery, getItemRect } from "vvirtual-grid/primitives";
 
 const length = 10000;
 const grid = useTemplateRef("grid");
 const popover = useTemplateRef("popover");
 const anchored = ref(-1); // the index the popover is bound to
-// reused on every call, never reallocated
-const rectArgs = {
-  root: null,
-  index: -1,
-  layout: null,
-  out: { x: 0, y: 0, width: 0, height: 0 },
-};
+const query = createRectQuery();
 
 function place() {
-  rectArgs.root = grid.value.$el;
-  rectArgs.index = anchored.value;
-  rectArgs.layout = grid.value.measurement;
-  if (rectArgs.index < 0 || !rectArgs.layout) return;
+  if (anchored.value < 0 || !grid.value.measurement) return;
+  query.root = grid.value.$el;
+  query.index = anchored.value;
+  query.layout = grid.value.measurement;
   // works even while the item is scrolled out and not rendered
-  if (!getItemViewportRect(rectArgs)) return;
-  const { x, y, height } = rectArgs.out;
+  if (!getItemRect(query)) return;
+  const { x, y, height } = query.rect;
   popover.value.style.left = x + "px";
   popover.value.style.top = y + height + "px";
 }
 
 function show(event) {
-  const index = getItemIndex({ root: grid.value.$el, target: event.target });
+  const index = Number(event.target.closest("[data-index]")?.dataset.index ?? -1);
   if (index === -1) return;
   anchored.value = index;
   place();
@@ -248,28 +260,30 @@ function show(event) {
 </script>
 
 <template>
-  <VirtualGrid
-    ref="grid"
-    role="list"
-    :length="length"
-    :pageProvider="pageProvider"
-    :pageSize="40"
-    @click="show"
-    @viewport-scroll="place"
-    @layout-change="place"
-  >
-    <template #default="{ item, style, index }">
-      <div
-        :style="style"
-        :data-index="index"
-        role="listitem"
-        :aria-setsize="length"
-        :aria-posinset="index + 1"
-      >
-        {{ item }}
-      </div>
-    </template>
-  </VirtualGrid>
+  <div style="height: 24rem; overflow-y: auto">
+    <VirtualGrid
+      ref="grid"
+      role="list"
+      :length="length"
+      :pageProvider="pageProvider"
+      :pageSize="40"
+      @click="show"
+      @viewport-scroll="place"
+      @layout-change="place"
+    >
+      <template #default="{ item, style, index }">
+        <div
+          :style="style"
+          :data-index="index"
+          role="listitem"
+          :aria-setsize="length"
+          :aria-posinset="index + 1"
+        >
+          {{ item }}
+        </div>
+      </template>
+    </VirtualGrid>
+  </div>
 
   <div ref="popover" popover style="position: fixed; margin: 0">
     Item {{ anchored }}
@@ -279,8 +293,8 @@ function show(event) {
 
 Where [CSS anchor positioning][anchor] is supported you can skip `place()`
 while the item is rendered: pass `createItemTracker({ onBind, onUnbind })` to
-`onRender` to set and clear `anchor-name` on the element of the anchored index,
-and give the popover a matching `position-anchor`.
+the `render` event to set and clear `anchor-name` on the element of the
+anchored index, and give the popover a matching `position-anchor`.
 
 ## Scroll Mode
 
@@ -289,14 +303,15 @@ Set it to `column` to enable horizontal scroll.
 
 ## Caveats
 
-The grid sets its own `height` (or `width` in column flow) to the size of the
-whole list. Put it inside an element that scrolls, and do not set `overflow`
-or a fixed height on the grid itself.
+Put `<VirtualGrid>` inside an element that scrolls. Do not set `overflow` or a
+fixed height on `<VirtualGrid>` itself. After computing, the grid sets its own
+height (or width in column flow), overriding whatever you set, and the page
+scrolls instead of the grid.
 
 The library does not require items to have a foreknown width and height, but
 does require them to be styled with the **same** width and height under a given
 viewport. For example, items may be `200px × 200px` below 768 px and
-`300px × 500px` above it — this is supported.
+`300px × 500px` above it. Both are supported.
 
 ## Development
 
