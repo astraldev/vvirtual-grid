@@ -16,6 +16,7 @@ const grid = useTemplateRef<{ $el: HTMLElement; measurement?: ItemLayout }>(
   "grid",
 );
 const focused = ref(0);
+const scrollTarget = ref<number>();
 const cellQuery = createCellQuery();
 let pendingFocus = false;
 
@@ -53,8 +54,14 @@ function focusFocused() {
   const element = grid.value?.$el.querySelector<HTMLElement>(
     `:scope > [data-index="${focused.value}"]`,
   );
-  element?.focus({ preventScroll: true });
-  if (element && document.activeElement === element) pendingFocus = false;
+  if (!element) {
+    scrollTarget.value = focused.value;
+    return;
+  }
+  scrollTarget.value = undefined;
+  element.scrollIntoView({ block: "nearest", inline: "nearest" });
+  element.focus({ preventScroll: true });
+  if (document.activeElement === element) pendingFocus = false;
 }
 </script>
 
@@ -68,7 +75,7 @@ function focusFocused() {
       :length="length"
       :page-size="60"
       :page-provider="pageProvider"
-      :scroll-to="focused"
+      :scroll-to="scrollTarget"
       scroll-behavior="auto"
       class="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2"
       @keydown="onKeydown"
