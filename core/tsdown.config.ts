@@ -31,12 +31,5 @@ export default defineConfig({
       delimiters: ["", ""],
     }),
   ],
-  external: [
-    "vue",
-    "@vueuse/core",
-    "ramda",
-    "rxjs",
-    "@nuxt/kit",
-    "@nuxt/schema",
-  ],
+  external: ["vue", "@vueuse/core", "rxjs", "@nuxt/kit", "@nuxt/schema"],
 });

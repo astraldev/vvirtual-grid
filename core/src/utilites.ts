@@ -8,7 +8,6 @@ import {
   scheduled,
 } from "rxjs";
 import { watchEffect } from "vue";
-import { partial, pipe, unary } from "ramda";
 import { type MaybeElementRef, useResizeObserver } from "@vueuse/core";
 
 export function fromProp<T, U extends keyof T>(
@@ -28,8 +27,8 @@ export function fromResizeObserver<T extends keyof ResizeObserverEntry>(
   if (typeof window === "undefined") return EMPTY;
 
   return scheduled(
-    fromEventPattern<ResizeObserverEntry[]>(
-      pipe(unary, partial(useResizeObserver, [elRef])),
+    fromEventPattern<ResizeObserverEntry[]>((handler) =>
+      useResizeObserver(elRef, (entries) => handler(entries)),
     ),
     animationFrameScheduler,
   ).pipe(

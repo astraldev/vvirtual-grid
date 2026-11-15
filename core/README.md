@@ -137,6 +137,7 @@ export default defineNuxtConfig({
 | `pageSize`                 | The number of items in a page from the item provider (e.g. a backend API)        | `number`                                                 | Required, an integer greater than or equal to 1                  |
 | `pageProviderDebounceTime` | For a network provider, set this first. Milliseconds to wait before calling `pageProvider`. Pages skipped meanwhile are never requested | `number`                                                 | Optional, an integer greater than or equal to 0, defaults to `0` |
 | `probeTag`                 | The HTML tag used as probe element                                               | `string`                                                 | Optional, any valid HTML tag, defaults to `div`                  |
+| `getItemId`                | Returns a unique, stable identifier of an item. Items with the same identifier are not rendered again when their page is loaded again | `(item: T) => string` &#124; `number` | Optional |
 | `respectScrollToOnResize`  | Snap to the position set by `scrollTo` when the grid container is resized        | `boolean`                                                | Optional, defaults to `true`                                     |
 | `scrollBehavior`           | The behavior of `scrollTo`                                                       | `"smooth"` &#124; `"auto"`                               | Optional, defaults to `"smooth"`                                 |
 | `scrollTo`                 | Scroll to a specific item by index                                               | `number`                                                 | Optional, an integer from 0 to `length - 1`                      |
@@ -211,7 +212,6 @@ Example:
 
 | Name          | Type                                  | Description                                                                                                                           |
 | ------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `allItems`    | `Ref`                                 | Every item loaded so far, by index                                                                                                    |
 | `ready`       | `Ref<boolean>`                        | `true` after the first measurement                                                                                                    |
 | `measurement` | `Ref<ResizeMeasurement \| undefined>` | The measurement the items are positioned with: `flow`, `columns`, `rows`, `colGap`, `rowGap`, `itemWidthWithGap`, `itemHeightWithGap` |
 

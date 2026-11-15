@@ -32,7 +32,6 @@
 
 <script lang="ts" setup generic="T extends object">
 import { type VueInstance, tryOnUnmounted } from "@vueuse/core";
-import { once } from "ramda";
 import {
   type PropType,
   useTemplateRef,
@@ -123,6 +122,17 @@ const props = defineProps({
     default: "div",
   },
 
+  /**
+   * Returns a unique, stable identifier of an item, e.g. its database id.
+   * When a page is loaded again, items with the same identifier are not
+   * rendered again.
+   */
+  getItemId: {
+    type: Function as PropType<(item: T) => string | number>,
+    required: false,
+    default: undefined,
+  },
+
   /** Method for key extraction from items */
   getKey: {
     type: Function as PropType<(internalItem: InternalItem) => number | string>,
@@ -149,17 +159,15 @@ const scroll$ = fromScrollParent(rootRef);
 // Exposed before the `await` below. A template ref binds to the component as
 // soon as it mounts, and after an `await` it would get the closed instance
 // until the parent renders again.
-const allItems = shallowRef<unknown[]>();
 const ready = shallowRef<boolean>();
 const measurement = shallowRef<ResizeMeasurement>();
-defineExpose({ allItems, ready, measurement });
+defineExpose({ ready, measurement });
 
 const {
   ready$, // has the buffer has started calculating with the DOM
   buffer$, // the items in the current scanning window
   contentSize$, // the size of the whole list
   scrollAction$, // the value sent to window.scrollTo()
-  allItems$, // all items memoized by the grid
   measurement$, // the measurement used to position the items
 } = await pipeline({
   // streams of prop
@@ -174,6 +182,7 @@ const {
   scroll$,
   respectScrollToOnResize$: fromProp(props, "respectScrollToOnResize"),
   scrollTo$: fromProp(props, "scrollTo"),
+  getItemId$: fromProp(props, "getItemId"),
 });
 
 const sharedProbeStyles = computed(() => {
@@ -197,13 +206,16 @@ const csrProbeStyles = computed(() => {
   };
 });
 
-onUpdated(
-  once(() => {
-    scrollAction$.subscribe(({ target, top, left }: ScrollAction) => {
-      target.scrollTo({ top, left, behavior: props.scrollBehavior });
-    });
-  }),
-);
+// subscribe once, after the first update
+let scrollsToItem = false;
+onUpdated(() => {
+  if (scrollsToItem) return;
+  scrollsToItem = true;
+
+  scrollAction$.subscribe(({ target, top, left }: ScrollAction) => {
+    target.scrollTo({ top, left, behavior: props.scrollBehavior });
+  });
+});
 
 const buffer = useObservable<InternalItem<T>[]>(
   buffer$ as Observable<InternalItem<T>[]>,
@@ -226,8 +238,6 @@ watch(
   () => props.pageProvider,
   () => (keyPrefix.value = new Date().getTime().toString()),
 );
-
-useObservable(allItems$, allItems);
 
 // region: low-level events
 useObservable(measurement$, measurement);
