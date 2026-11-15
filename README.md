@@ -1,6 +1,6 @@
 # vvirtual-grid
 
-> A Vue 3 component for rendering massive lists as a CSS grid with virtual scrolling.
+> A Vue 3 component that renders a large list as a CSS grid and keeps only the items near the viewport in the page.
 
 [![npm version](https://img.shields.io/npm/v/vvirtual-grid)](https://www.npmjs.com/package/vvirtual-grid)
 [![license](https://img.shields.io/npm/l/vvirtual-grid)](./LICENSE)
@@ -26,7 +26,7 @@ This is a monorepo managed with [pnpm workspaces](https://pnpm.io/workspaces).
 
 | Package | Description |
 | --- | --- |
-| [`core/`](./core) | The `vvirtual-grid` library — Vue component, Nuxt module, and utilities |
+| [`core/`](./core) | The `vvirtual-grid` library: Vue component, Nuxt module and utilities |
 | [`docs/`](./docs) | Documentation site built with [Docus](https://docus.dev) |
 | [`playground/`](./playground) | Local development playground |
 
@@ -62,11 +62,11 @@ pnpm install
 1. Fork the repo and create a branch from `main`.
 2. Make your changes in `core/src/` or `core/integrations/`.
 3. Add or update tests as needed.
-4. Open a pull request — CI will run lint and tests automatically.
+4. Open a pull request. CI runs lint and tests automatically.
 
 ## Credits
 
-Special thanks goes to
+Special thanks go to
 
 - [Sardor Astanov](https://github.com/sardor01)
 - [Roc Wong](https://github.com/rocwang)
