@@ -169,16 +169,19 @@ The primitives are plain functions in `vvirtual-grid/primitives`. The grid does
 not import them, so what you do not use is not in your bundle. Functions that
 take `out` fill your object instead of allocating one.
 
-| Function                                                                 | Description                                                                                                                                 |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `getItemRectByIndex(index, layout, out: ItemRect): ItemRect`             | `x`, `y`, `width`, `height` of an item relative to the first item, **rendered or not**. Pure arithmetic.                                    |
-| `getItemViewportRect(root, index, layout, out: ItemRect): boolean`       | The same relative to the viewport, like `getBoundingClientRect()`. Reads the layout once. `false` when the grid is empty.                   |
-| `getItemCellByIndex(index, layout, out: ItemCell): ItemCell`             | Zero-based visual `row` and `column` of an item.                                                                                            |
-| `getIndexByCell(row, column, layout): number`                            | The index at a zero-based visual row and column.                                                                                            |
-| `getGridDimensions(length, layout, out: GridDimensions): GridDimensions` | Total `rowCount` and `columnCount` of the whole list.                                                                                       |
-| `getItemElement(root, index): HTMLElement \| null`                       | The element currently rendering an item, `null` when it is virtualized.                                                                     |
-| `getItemIndex(root, target: EventTarget \| null): number`                | The index of the item rendered by (or around) an element, e.g. `event.target`. `-1` when there is none.                                     |
-| `createItemTracker(onBind?, onUnbind?): (root) => void`                  | Returns a function that reports `onBind(index, element)` / `onUnbind(index)` for what changed since its last call. Call it from `onRender`. |
+Every function takes one object. Create it once, change `index` (or
+`target`) and call it again, so a call allocates nothing.
+
+| Function                                                     | Description                                                                                                               |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `getItemRectByIndex({ index, layout, out }): ItemRect`       | `x`, `y`, `width`, `height` of an item relative to the first item, **rendered or not**. Pure arithmetic.                  |
+| `getItemViewportRect({ root, index, layout, out }): boolean` | The same relative to the viewport, like `getBoundingClientRect()`. Reads the layout once. `false` when the grid is empty. |
+| `getItemCellByIndex({ index, layout, out }): ItemCell`       | Zero-based visual `row` and `column` of an item.                                                                          |
+| `getIndexByCell({ row, column, layout }): number`            | The index at a zero-based visual row and column.                                                                          |
+| `getGridDimensions({ length, layout, out }): GridDimensions` | Total `rowCount` and `columnCount` of the whole list.                                                                     |
+| `getItemElement({ root, index }): HTMLElement \| null`       | The element currently rendering an item, `null` when it is virtualized.                                                   |
+| `getItemIndex({ root, target }): number`                     | The index of the item rendered by (or around) an element, e.g. `event.target`. `-1` when there is none.                   |
+| `createItemTracker({ onBind, onUnbind }): (root) => void`    | Returns a function that reports what started and stopped rendering since its last call. Call it from `onRender`.          |
 
 - `root` is the element of the grid (`gridRef.value.$el`).
 - `layout` is the `measurement` exposed by the grid (see
@@ -215,20 +218,28 @@ const length = 10000;
 const grid = useTemplateRef("grid");
 const popover = useTemplateRef("popover");
 const anchored = ref(-1); // the index the popover is bound to
-const rect = { x: 0, y: 0, width: 0, height: 0 }; // reused, never reallocated
+// reused on every call, never reallocated
+const rectArgs = {
+  root: null,
+  index: -1,
+  layout: null,
+  out: { x: 0, y: 0, width: 0, height: 0 },
+};
 
 function place() {
-  const layout = grid.value.measurement;
-  if (anchored.value < 0 || !layout) return;
+  rectArgs.root = grid.value.$el;
+  rectArgs.index = anchored.value;
+  rectArgs.layout = grid.value.measurement;
+  if (rectArgs.index < 0 || !rectArgs.layout) return;
   // works even while the item is scrolled out and not rendered
-  if (!getItemViewportRect(grid.value.$el, anchored.value, layout, rect))
-    return;
-  popover.value.style.left = rect.x + "px";
-  popover.value.style.top = rect.y + rect.height + "px";
+  if (!getItemViewportRect(rectArgs)) return;
+  const { x, y, height } = rectArgs.out;
+  popover.value.style.left = x + "px";
+  popover.value.style.top = y + height + "px";
 }
 
 function show(event) {
-  const index = getItemIndex(grid.value.$el, event.target);
+  const index = getItemIndex({ root: grid.value.$el, target: event.target });
   if (index === -1) return;
   anchored.value = index;
   place();
@@ -267,7 +278,7 @@ function show(event) {
 ```
 
 Where [CSS anchor positioning][anchor] is supported you can skip `place()`
-while the item is rendered: pass `createItemTracker(onBind, onUnbind)` to
+while the item is rendered: pass `createItemTracker({ onBind, onUnbind })` to
 `onRender` to set and clear `anchor-name` on the element of the anchored index,
 and give the popover a matching `position-anchor`.
 
@@ -277,6 +288,10 @@ The library uses the `grid-auto-flow` CSS property to infer scroll direction.
 Set it to `column` to enable horizontal scroll.
 
 ## Caveats
+
+The grid sets its own `height` (or `width` in column flow) to the size of the
+whole list. Put it inside an element that scrolls, and do not set `overflow`
+or a fixed height on the grid itself.
 
 The library does not require items to have a foreknown width and height, but
 does require them to be styled with the **same** width and height under a given

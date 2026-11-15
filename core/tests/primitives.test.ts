@@ -35,7 +35,9 @@ const dimensions = () => ({ rowCount: 0, columnCount: 0 });
 
 describe("getItemRectByIndex", () => {
   it("computes the rect of an item in row flow", () => {
-    expect(getItemRectByIndex(7, rowLayout, rect())).toEqual({
+    expect(
+      getItemRectByIndex({ index: 7, layout: rowLayout, out: rect() }),
+    ).toEqual({
       x: 120,
       y: 120,
       width: 100,
@@ -44,7 +46,9 @@ describe("getItemRectByIndex", () => {
   });
 
   it("computes the rect of an item in column flow", () => {
-    expect(getItemRectByIndex(7, columnLayout, rect())).toEqual({
+    expect(
+      getItemRectByIndex({ index: 7, layout: columnLayout, out: rect() }),
+    ).toEqual({
       x: 360,
       y: 60,
       width: 100,
@@ -55,7 +59,7 @@ describe("getItemRectByIndex", () => {
   it("agrees with the offset used to render the items", () => {
     for (const layout of [rowLayout, columnLayout]) {
       for (const index of [0, 1, 5, 1000, 123457]) {
-        const { x, y } = getItemRectByIndex(index, layout, rect());
+        const { x, y } = getItemRectByIndex({ index, layout, out: rect() });
         expect({ x, y }).toEqual(getItemOffsetByIndex(index, layout));
       }
     }
@@ -63,21 +67,25 @@ describe("getItemRectByIndex", () => {
 
   it("fills and returns the given object", () => {
     const out = rect();
-    expect(getItemRectByIndex(4, rowLayout, out)).toBe(out);
+    expect(getItemRectByIndex({ index: 4, layout: rowLayout, out })).toBe(out);
     expect(out).toEqual({ x: 120, y: 60, width: 100, height: 50 });
   });
 });
 
 describe("getItemCellByIndex / getIndexByCell", () => {
   it("computes the cell in row flow", () => {
-    expect(getItemCellByIndex(7, rowLayout, cell())).toEqual({
+    expect(
+      getItemCellByIndex({ index: 7, layout: rowLayout, out: cell() }),
+    ).toEqual({
       row: 2,
       column: 1,
     });
   });
 
   it("computes the cell in column flow", () => {
-    expect(getItemCellByIndex(7, columnLayout, cell())).toEqual({
+    expect(
+      getItemCellByIndex({ index: 7, layout: columnLayout, out: cell() }),
+    ).toEqual({
       row: 1,
       column: 3,
     });
@@ -86,8 +94,12 @@ describe("getItemCellByIndex / getIndexByCell", () => {
   it("round-trips between index and cell", () => {
     for (const layout of [rowLayout, columnLayout]) {
       for (const index of [0, 1, 2, 3, 7, 999]) {
-        const { row, column } = getItemCellByIndex(index, layout, cell());
-        expect(getIndexByCell(row, column, layout)).toBe(index);
+        const { row, column } = getItemCellByIndex({
+          index,
+          layout,
+          out: cell(),
+        });
+        expect(getIndexByCell({ row, column, layout })).toBe(index);
       }
     }
   });
@@ -95,18 +107,24 @@ describe("getItemCellByIndex / getIndexByCell", () => {
 
 describe("getGridDimensions", () => {
   it("counts rows and columns in row flow", () => {
-    expect(getGridDimensions(10, rowLayout, dimensions())).toEqual({
+    expect(
+      getGridDimensions({ length: 10, layout: rowLayout, out: dimensions() }),
+    ).toEqual({
       rowCount: 4,
       columnCount: 3,
     });
-    expect(getGridDimensions(2, rowLayout, dimensions())).toEqual({
+    expect(
+      getGridDimensions({ length: 2, layout: rowLayout, out: dimensions() }),
+    ).toEqual({
       rowCount: 1,
       columnCount: 2,
     });
   });
 
   it("counts rows and columns in column flow", () => {
-    expect(getGridDimensions(7, columnLayout, dimensions())).toEqual({
+    expect(
+      getGridDimensions({ length: 7, layout: columnLayout, out: dimensions() }),
+    ).toEqual({
       rowCount: 2,
       columnCount: 4,
     });
@@ -131,31 +149,44 @@ describe("DOM primitives", () => {
       ({ left: 15, top: -400 }) as DOMRect;
     const out = rect();
 
-    expect(getItemViewportRect(root, 7, rowLayout, out)).toBe(true);
+    expect(
+      getItemViewportRect({ root, index: 7, layout: rowLayout, out }),
+    ).toBe(true);
     expect(out).toEqual({ x: 135, y: -280, width: 100, height: 50 });
   });
 
   it("leaves out untouched when the grid is empty", () => {
     const out = rect();
 
-    expect(getItemViewportRect(createRoot([]), 7, rowLayout, out)).toBe(false);
+    expect(
+      getItemViewportRect({
+        root: createRoot([]),
+        index: 7,
+        layout: rowLayout,
+        out,
+      }),
+    ).toBe(false);
     expect(out).toEqual(rect());
   });
 
   it("maps between indexes and marked elements", () => {
     const root = createRoot([null, 12, 10, 11]);
 
-    expect(getItemElement(root, 10)).toBe(root.children[2]);
-    expect(getItemElement(root, 0)).toBeNull();
-    expect(getItemIndex(root, root.children[3]!.firstElementChild)).toBe(11);
-    expect(getItemIndex(root, root.children[0]!)).toBe(-1);
-    expect(getItemIndex(root, document.createElement("div"))).toBe(-1);
+    expect(getItemElement({ root, index: 10 })).toBe(root.children[2]);
+    expect(getItemElement({ root, index: 0 })).toBeNull();
+    expect(
+      getItemIndex({ root, target: root.children[3]!.firstElementChild }),
+    ).toBe(11);
+    expect(getItemIndex({ root, target: root.children[0]! })).toBe(-1);
+    expect(getItemIndex({ root, target: document.createElement("div") })).toBe(
+      -1,
+    );
   });
 
   it("tracks the elements bound to indexes", () => {
     const onBind = vi.fn();
     const onUnbind = vi.fn();
-    const track = createItemTracker(onBind, onUnbind);
+    const track = createItemTracker({ onBind, onUnbind });
     const root = createRoot([null, 0, 1]);
     const [, first, second] = Array.from(root.children);
 
@@ -186,7 +217,7 @@ describe("DOM primitives", () => {
 
   it("works with only one of the callbacks", () => {
     const onUnbind = vi.fn();
-    const track = createItemTracker(undefined, onUnbind);
+    const track = createItemTracker({ onUnbind });
     const root = createRoot([0]);
 
     track(root);

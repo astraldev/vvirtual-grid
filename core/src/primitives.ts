@@ -37,15 +37,73 @@ export type ItemLayout = Pick<
 type Tracks = Pick<ItemLayout, "flow" | "columns" | "rows">;
 
 /**
+ * Arguments of the primitives. Each function takes one object, so you can
+ * create it once, change `index` (or `target`) and call again without
+ * allocating.
+ */
+export interface ItemRectArgs<R extends ItemRect = ItemRect> {
+  /** Zero-based index of the item. Not checked against the list length. */
+  index: number;
+  /** The grid's exposed `measurement`. */
+  layout: ItemLayout;
+  /** Object the result is written into. */
+  out: R;
+}
+
+export interface ItemViewportRectArgs<
+  R extends ItemRect = ItemRect,
+> extends ItemRectArgs<R> {
+  /** The grid element, `gridRef.value.$el`. */
+  root: Element;
+}
+
+export interface ItemCellArgs<C extends ItemCell = ItemCell> {
+  index: number;
+  layout: Tracks;
+  out: C;
+}
+
+export interface IndexByCellArgs {
+  row: number;
+  column: number;
+  layout: Tracks;
+}
+
+export interface GridDimensionsArgs<D extends GridDimensions = GridDimensions> {
+  /** Total number of items, the grid's `length` prop. */
+  length: number;
+  layout: Tracks;
+  out: D;
+}
+
+export interface ItemElementArgs {
+  root: Element;
+  index: number;
+}
+
+export interface ItemIndexArgs {
+  root: Element;
+  /** An element inside an item, such as `event.target`. */
+  target: EventTarget | null;
+}
+
+export interface ItemTrackerCallbacks {
+  /** An element started rendering `index`. */
+  onBind?: (index: number, element: HTMLElement) => void;
+  /** No element renders `index` any more. */
+  onUnbind?: (index: number) => void;
+}
+
+/**
  * Writes the rectangle of an item into `out`, from its index alone, so it
  * works for items that are not rendered. Coordinates are relative to the
  * top-left corner of the first item (index 0). Does not allocate.
  */
-export function getItemRectByIndex<R extends ItemRect>(
-  index: number,
-  layout: ItemLayout,
-  out: R,
-): R {
+export function getItemRectByIndex<R extends ItemRect>({
+  index,
+  layout,
+  out,
+}: ItemRectArgs<R>): R {
   if (layout.flow === "row") {
     out.x = (index % layout.columns) * layout.itemWidthWithGap;
     out.y = Math.floor(index / layout.columns) * layout.itemHeightWithGap;
@@ -60,17 +118,17 @@ export function getItemRectByIndex<R extends ItemRect>(
 }
 
 /** Writes the zero-based visual row and column of an item into `out`. */
-export function getItemCellByIndex<C extends ItemCell>(
-  index: number,
-  tracks: Tracks,
-  out: C,
-): C {
-  if (tracks.flow === "row") {
-    out.row = Math.floor(index / tracks.columns);
-    out.column = index % tracks.columns;
+export function getItemCellByIndex<C extends ItemCell>({
+  index,
+  layout,
+  out,
+}: ItemCellArgs<C>): C {
+  if (layout.flow === "row") {
+    out.row = Math.floor(index / layout.columns);
+    out.column = index % layout.columns;
   } else {
-    out.row = index % tracks.rows;
-    out.column = Math.floor(index / tracks.rows);
+    out.row = index % layout.rows;
+    out.column = Math.floor(index / layout.rows);
   }
 
   return out;
@@ -80,28 +138,28 @@ export function getItemCellByIndex<C extends ItemCell>(
  * The index of the item at a zero-based visual row and column. The result is
  * not checked against the length of the list.
  */
-export function getIndexByCell(
-  row: number,
-  column: number,
-  tracks: Tracks,
-): number {
-  return tracks.flow === "row"
-    ? row * tracks.columns + column
-    : column * tracks.rows + row;
+export function getIndexByCell({
+  row,
+  column,
+  layout,
+}: IndexByCellArgs): number {
+  return layout.flow === "row"
+    ? row * layout.columns + column
+    : column * layout.rows + row;
 }
 
 /** Writes the total number of visual rows and columns of the list into `out`. */
-export function getGridDimensions<D extends GridDimensions>(
-  length: number,
-  tracks: Tracks,
-  out: D,
-): D {
-  if (tracks.flow === "row") {
-    out.rowCount = Math.ceil(length / tracks.columns);
-    out.columnCount = Math.min(tracks.columns, length);
+export function getGridDimensions<D extends GridDimensions>({
+  length,
+  layout,
+  out,
+}: GridDimensionsArgs<D>): D {
+  if (layout.flow === "row") {
+    out.rowCount = Math.ceil(length / layout.columns);
+    out.columnCount = Math.min(layout.columns, length);
   } else {
-    out.rowCount = Math.min(tracks.rows, length);
-    out.columnCount = Math.ceil(length / tracks.rows);
+    out.rowCount = Math.min(layout.rows, length);
+    out.columnCount = Math.ceil(length / layout.rows);
   }
 
   return out;
@@ -110,21 +168,18 @@ export function getGridDimensions<D extends GridDimensions>(
 /**
  * Writes the rectangle of an item relative to the viewport into `out`, like
  * `getBoundingClientRect()` would, whether the item is rendered or not.
- * `root` is the element of the grid. Reads the layout once and returns
- * `false`, leaving `out` untouched, when the grid has nothing rendered.
+ * Reads the layout once and returns `false`, leaving `out` untouched, when
+ * the grid has nothing rendered.
  */
 export function getItemViewportRect<R extends ItemRect>(
-  root: Element,
-  index: number,
-  layout: ItemLayout,
-  out: R,
+  args: ItemViewportRectArgs<R>,
 ): boolean {
   // the first child always sits, untranslated, in the cell of the first item
-  const first = root.firstElementChild;
+  const first = args.root.firstElementChild;
   if (first === null) return false;
 
   const origin = first.getBoundingClientRect();
-  getItemRectByIndex(index, layout, out);
+  const out = getItemRectByIndex(args);
   out.x += origin.left;
   out.y += origin.top;
 
@@ -143,10 +198,10 @@ function readIndex(element: Element): number {
  * The element currently rendering an item, or `null` when it is virtualized.
  * Only the elements that the slots mark with `data-index` can be found.
  */
-export function getItemElement(
-  root: Element,
-  index: number,
-): HTMLElement | null {
+export function getItemElement({
+  root,
+  index,
+}: ItemElementArgs): HTMLElement | null {
   for (let el = root.firstElementChild; el; el = el.nextElementSibling) {
     if (readIndex(el) === index) return el as HTMLElement;
   }
@@ -158,10 +213,7 @@ export function getItemElement(
  * The index of the item rendered by, or around, an element such as
  * `event.target`. Returns -1 when the element is not part of a marked item.
  */
-export function getItemIndex(
-  root: Element,
-  target: EventTarget | null,
-): number {
+export function getItemIndex({ root, target }: ItemIndexArgs): number {
   let node = target as Element | null;
   if (node === null || typeof node.getAttribute !== "function") return -1;
 
@@ -181,10 +233,10 @@ export function getItemIndex(
  * `onBind` is also called when another element takes over an index, e.g. when
  * a placeholder is replaced by the loaded item.
  */
-export function createItemTracker(
-  onBind: ((index: number, element: HTMLElement) => void) | undefined,
-  onUnbind?: (index: number) => void,
-): (root: Element) => void {
+export function createItemTracker({
+  onBind,
+  onUnbind,
+}: ItemTrackerCallbacks): (root: Element) => void {
   let bound = new Map<number, Element>();
   let next = new Map<number, Element>();
 
