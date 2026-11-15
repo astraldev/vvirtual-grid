@@ -49,7 +49,7 @@ export function computeSpaceBehindWindowOf(el: Element): SpaceBehindWindow {
   };
 }
 
-interface GridMeasurement {
+export interface GridMeasurement {
   colGap: number;
   rowGap: number;
   flow: "row" | "column";
@@ -73,7 +73,7 @@ export function getGridMeasurement(rootEl: Element): GridMeasurement {
   };
 }
 
-interface ResizeMeasurement extends GridMeasurement {
+export interface ResizeMeasurement extends GridMeasurement {
   itemHeightWithGap: number;
   itemWidthWithGap: number;
 }
@@ -347,6 +347,8 @@ interface PipelineOutput {
   scrollAction$: Observable<ScrollAction>;
   allItems$: Observable<unknown[]>;
   ready$: Observable<boolean>;
+  /** The latest measurement of the grid, emits when the item size or grid tracks change. */
+  measurement$: Observable<ResizeMeasurement>;
   recompute: () => Promise<void>;
 }
 
@@ -558,5 +560,13 @@ export async function pipeline({
     await firstValueFrom(ready$.pipe(filter((v) => v === true)));
   }
 
-  return { buffer$, contentSize$, scrollAction$, allItems$, ready$, recompute };
+  return {
+    buffer$,
+    contentSize$,
+    scrollAction$,
+    allItems$,
+    ready$,
+    measurement$: resizeMeasurement$,
+    recompute,
+  };
 }
