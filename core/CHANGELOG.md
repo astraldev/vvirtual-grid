@@ -1,5 +1,63 @@
 # Changelog
 
+## v1.2.1
+
+[compare changes](https://github.com/astraldev/vvirtual-grid/compare/v1.1.6...v1.2.1)
+
+### 🚀 Enhancements
+
+- Expose low-level position, element and order primitives ([0f845b1](https://github.com/astraldev/vvirtual-grid/commit/0f845b1))
+- **grid:** ⚠️  Drop ramda, keep loaded pages internal and compare items by id ([6260a0d](https://github.com/astraldev/vvirtual-grid/commit/6260a0d))
+
+### 🔥 Performance
+
+- Improve performance of accumulateAllItems function to reduce overhead due to array modifications triggering gc ([03956a1](https://github.com/astraldev/vvirtual-grid/commit/03956a1))
+- Make the scroll path linear and stop re-creating unchanged items ([5607b67](https://github.com/astraldev/vvirtual-grid/commit/5607b67))
+
+### 🩹 Fixes
+
+- Expose allItems, ready and measurement on the first render ([a22033f](https://github.com/astraldev/vvirtual-grid/commit/a22033f))
+
+### 💅 Refactors
+
+- Move the primitives out of the component into plain functions ([7ac32f2](https://github.com/astraldev/vvirtual-grid/commit/7ac32f2))
+- **primitives:** Take one object of named arguments ([986c429](https://github.com/astraldev/vvirtual-grid/commit/986c429))
+- **primitives:** Cut to four functions with reusable queries, emit events ([e2d5229](https://github.com/astraldev/vvirtual-grid/commit/e2d5229))
+- **slots:** Drop undocumented total slot prop ([96e7386](https://github.com/astraldev/vvirtual-grid/commit/96e7386))
+
+### 📖 Documentation
+
+- Restructure the docs site and upgrade Docus ([6be1088](https://github.com/astraldev/vvirtual-grid/commit/6be1088))
+- Rewrite guides as procedures and document the new primitives ([7e7f410](https://github.com/astraldev/vvirtual-grid/commit/7e7f410))
+- Add Floating UI and ARIA demos, benchmarks page, and review fixes ([5d54387](https://github.com/astraldev/vvirtual-grid/commit/5d54387))
+- State the 1.2.0 performance gain over 1.1.6 in the changelog and README ([fbbf79d](https://github.com/astraldev/vvirtual-grid/commit/fbbf79d))
+- State the supported scope and point the docs at netlify ([f44ac5f](https://github.com/astraldev/vvirtual-grid/commit/f44ac5f))
+- Rewrite guides and reference for 1.2.0 ([c2c728f](https://github.com/astraldev/vvirtual-grid/commit/c2c728f))
+- Update the first-render figures in the introduction ([d44052d](https://github.com/astraldev/vvirtual-grid/commit/d44052d))
+- Scroll to the focused item only when it leaves the view ([16c96a3](https://github.com/astraldev/vvirtual-grid/commit/16c96a3))
+- **todo:** Record the RxJS 9 migration research ([41fc9a7](https://github.com/astraldev/vvirtual-grid/commit/41fc9a7))
+
+### 📦 Build
+
+- Mark the package side-effect free and add a primitives entry ([e79f1ec](https://github.com/astraldev/vvirtual-grid/commit/e79f1ec))
+- **core:** Target ES2020 and record the smaller bundle ([6ea8c93](https://github.com/astraldev/vvirtual-grid/commit/6ea8c93))
+
+### 🏡 Chore
+
+- Add profiler for better performance analysis ([aaa2f05](https://github.com/astraldev/vvirtual-grid/commit/aaa2f05))
+- Use better benchmarks labels ([6268c12](https://github.com/astraldev/vvirtual-grid/commit/6268c12))
+- **release:** V1.2.0 ([a0b9968](https://github.com/astraldev/vvirtual-grid/commit/a0b9968))
+- Keep the pnpm store inside the workspace ([ddda363](https://github.com/astraldev/vvirtual-grid/commit/ddda363))
+- Remove manual publishing ([e323b22](https://github.com/astraldev/vvirtual-grid/commit/e323b22))
+
+#### ⚠️ Breaking Changes
+
+- **grid:** ⚠️  Drop ramda, keep loaded pages internal and compare items by id ([6260a0d](https://github.com/astraldev/vvirtual-grid/commit/6260a0d))
+
+### ❤️ Contributors
+
+- Ekure Edem ([@astraldev](https://github.com/astraldev))
+
 ## v1.2.0
 
 [compare changes](https://github.com/astraldev/vvirtual-grid/compare/v1.1.6...v1.2.0)
