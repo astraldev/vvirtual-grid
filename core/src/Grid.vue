@@ -50,6 +50,7 @@ import {
   type InternalItem,
   pipeline,
   type ScrollAction,
+  type ResizeMeasurement,
 } from "./pipeline";
 import { fromProp, fromResizeObserver } from "./utilites";
 import { fromScrollParent } from "./composables/useFromScrollParent";
@@ -161,6 +162,14 @@ const probeRef = useTemplateRef<HTMLElement | VueInstance>("probe");
 // a stream of root elements when scrolling
 const scroll$ = fromScrollParent(rootRef);
 
+// Exposed before the `await` below. A template ref binds to the component as
+// soon as it mounts, and after an `await` it would get the closed instance
+// until the parent renders again.
+const allItems = shallowRef<unknown[]>();
+const ready = shallowRef<boolean>();
+const measurement = shallowRef<ResizeMeasurement>();
+defineExpose({ allItems, ready, measurement });
+
 const {
   ready$, // has the buffer has started calculating with the DOM
   buffer$, // the items in the current scanning window
@@ -216,7 +225,7 @@ const buffer = useObservable<InternalItem<T>[]>(
   buffer$ as Observable<InternalItem<T>[]>,
 );
 
-const ready = useObservable(ready$);
+useObservable(ready$, ready);
 const contentSize = useObservable(contentSize$);
 const rootStyles = computed<StyleValue>(() =>
   Object.fromEntries([
@@ -234,10 +243,10 @@ watch(
   () => (keyPrefix.value = new Date().getTime().toString()),
 );
 
-const allItems = useObservable(allItems$);
+useObservable(allItems$, allItems);
 
 // region: low-level hooks, they do nothing unless a callback is given
-const measurement = useObservable(measurement$);
+useObservable(measurement$, measurement);
 
 const scrollSubscription = scroll$.subscribe(() => {
   if (props.onViewportScroll) props.onViewportScroll();
@@ -259,6 +268,4 @@ watch(
   { flush: "post" },
 );
 // endregion
-
-defineExpose({ allItems, ready, measurement });
 </script>
