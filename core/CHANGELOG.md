@@ -1,5 +1,34 @@
 # Changelog
 
+## v1.2.0
+
+[compare changes](https://github.com/astraldev/vvirtual-grid/compare/v1.1.6...v1.2.0)
+
+### 🚀 Enhancements
+
+- `vvirtual-grid/primitives` returns the rectangle, row, column and element of any item, rendered or not. Each function takes one reusable object of named arguments ([7639592](https://github.com/astraldev/vvirtual-grid/commit/7639592), [f398081](https://github.com/astraldev/vvirtual-grid/commit/f398081))
+- `<VirtualGrid>` exposes `measurement` and accepts `onRender`, `onViewportScroll` and `onLayoutChange` ([7639592](https://github.com/astraldev/vvirtual-grid/commit/7639592))
+
+### 🩹 Fixes
+
+- Resolved `undefined` for `allItems`, `ready` and `measurement` on a template ref read before the parent rendered again. They are now set on the first render
+
+### 🔥 Performance
+
+- Scrolling a list of 1,000,000 items by one row per event takes about 1 ms for 20 events, down from about 2.9 s ([7aab6fe](https://github.com/astraldev/vvirtual-grid/commit/7aab6fe))
+
+### 📦 Build
+
+- The package is marked side-effect free, so bundlers drop exports you do not import ([6644e7b](https://github.com/astraldev/vvirtual-grid/commit/6644e7b))
+
+### 📖 Documentation
+
+- New pages for the primitives, accessibility, popovers, sizing and performance
+
+### ❤️ Contributors
+
+- Ekure Edem ([@astraldev](https://github.com/astraldev))
+
 ## v1.1.6
 
 [compare changes](https://github.com/astraldev/vvirtual-grid/compare/v1.1.5...v1.1.6)
