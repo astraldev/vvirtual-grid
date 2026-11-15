@@ -3,8 +3,21 @@
 A reusable component for Vue 3 that renders a list with a huge number of
 items (e.g. 1000+ items) as a grid in a performant way.
 
-- [Documentation](https://vvirtual-grid.com)
+- [Documentation](https://vvirtual-grid.netlify.app)
 - [NPM Package][npm]
+
+## Scope
+
+`vvirtual-grid` handles over a million items. The
+[benchmarks](https://github.com/astraldev/vvirtual-grid/tree/main/benchmarks)
+render 1,000,000 items in one grid, and the page holds about 200 item elements
+at a time.
+
+It is a performant grid and nothing else. It is not a replacement for a
+general-purpose virtualizer such as [TanStack Virtual](https://tanstack.com/virtual)
+or `vue-virtual-scroller`, which also handle lists, tables and dynamic content.
+It renders grids of equally sized items, so items whose size depends on their
+content are not supported. Use one of those libraries if you need that.
 
 ## Features
 
@@ -27,7 +40,7 @@ Version 1.2.0 against 1.1.6, on a list of 1,000,000 items, on the same machine.
 | 20 scroll events, 2px each        | 0.017 ms | 0.004 ms | 76%        | 4 times      |
 | Starting the grid                 | 44 ms    | 0.82 ms  | 98%        | 54 times     |
 
-The [benchmarks page](https://vvirtual-grid.com/reference/benchmarks) has the full
+The [benchmarks page](https://vvirtual-grid.netlify.app/reference/benchmarks) has the full
 tables and how to run them.
 
 ## Install
@@ -226,8 +239,8 @@ The grid emits three events. None of them carries a payload.
 
 ## Low-level Primitives
 
-The [primitives reference](https://vvirtual-grid.com/reference/primitives) and the
-[popovers guide](https://vvirtual-grid.com/guides/popovers) cover this section in
+The [primitives reference](https://vvirtual-grid.netlify.app/reference/primitives) and the
+[popovers guide](https://vvirtual-grid.netlify.app/guides/popovers) cover this section in
 full.
 
 The grid does not add ARIA roles, focus handling or overlays. Instead, it gives

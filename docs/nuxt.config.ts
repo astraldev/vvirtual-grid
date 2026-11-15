@@ -8,7 +8,7 @@ export default defineNuxtConfig({
   },
   site: {
     name: "Vue Virtual Grid",
-    url: "https://vvirtual-grid.com",
+    url: "https://vvirtual-grid.netlify.app",
   },
   seo: {
     meta: {

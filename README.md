@@ -5,6 +5,21 @@
 [![npm version](https://img.shields.io/npm/v/vvirtual-grid)](https://www.npmjs.com/package/vvirtual-grid)
 [![license](https://img.shields.io/npm/l/vvirtual-grid)](./LICENSE)
 
+## Scope
+
+`vvirtual-grid` handles over a million items. The [benchmarks](./benchmarks)
+render 1,000,000 items in one grid, and the page holds about 200 item elements
+at a time.
+
+It is a performant grid and nothing else. It is not a replacement for a
+general-purpose virtualizer such as [TanStack Virtual](https://tanstack.com/virtual)
+or `vue-virtual-scroller`, which also handle lists, tables and dynamic content.
+
+- Grids only. Not lists, tables, feeds or masonry.
+- Static items only. Every item must have the same width and height, so items
+  whose size depends on their content are out of scope. The size may change
+  with the viewport, but not per item.
+
 ## Packages
 
 This is a monorepo managed with [pnpm workspaces](https://pnpm.io/workspaces).
@@ -17,7 +32,7 @@ This is a monorepo managed with [pnpm workspaces](https://pnpm.io/workspaces).
 
 ## Getting Started
 
-See the [documentation]() or the [core README](./core/README.md) for usage instructions.
+See the [documentation](https://vvirtual-grid.netlify.app) or the [core README](./core/README.md) for usage instructions.
 
 ## Development
 
