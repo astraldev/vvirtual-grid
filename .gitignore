@@ -46,3 +46,4 @@ core/scripts/pipeline.mjs.map
 core/scripts/pipeline.js
 core/scripts/pipeline.js.map
 core/profiles/
+.output/

@@ -2,11 +2,15 @@
   "name": "docs",
   "scripts": {
     "dev": "nuxt dev --extends docus",
-    "build": "nuxt build --extends docus"
+    "build": "pnpm -C ../core build && nuxt build --extends docus",
+    "generate": "pnpm -C ../core build && nuxt generate --extends docus",
+    "preview": "nuxt preview --extends docus"
   },
   "dependencies": {
-    "better-sqlite3": "^12.6.2",
-    "docus": "latest",
-    "nuxt": "^4.3.1"
-  }
+    "docus": "^5.15.0",
+    "nuxt": "^4.6.4",
+    "vvirtual-grid": "workspace:*"
+  },
+  "private": true,
+  "type": "module"
 }
