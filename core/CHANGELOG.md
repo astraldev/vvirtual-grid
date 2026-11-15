@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.2.2
+
+[compare changes](https://github.com/astraldev/vvirtual-grid/compare/v1.2.1...v1.2.2)
+
+### 🤖 CI
+
+- Publish on release published and split the release job ([7f9f259](https://github.com/astraldev/vvirtual-grid/commit/7f9f259))
+
+### ❤️ Contributors
+
+- Ekure Edem ([@astraldev](https://github.com/astraldev))
+
 ## v1.2.1
 
 [compare changes](https://github.com/astraldev/vvirtual-grid/compare/v1.1.6...v1.2.1)
